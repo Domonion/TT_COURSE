@@ -59,20 +59,9 @@
 #define pb pop_back
 #define is(fromVariable, toType, name) toType name = dynamic_cast<toType>(fromVariable)
 
-namespace Main {
-    using namespace std;
-    using uint = unsigned int;
-    using ll = long long;
-    using ull = unsigned long long;
-    using ld = long double;
-    thread_local mt19937 Randomer;
-
-    void Initialize() {
-        iostream::sync_with_stdio(false);
-        cin.tie(nullptr);
-        cout.tie(nullptr);
-        Randomer.seed();
-    }
-}
-
+using namespace std;
+using uint = unsigned int;
+using ll = long long;
+using ull = unsigned long long;
+using ld = long double;
 #endif //A_MAIN_H

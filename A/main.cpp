@@ -1,13 +1,11 @@
 //
 // Created by Artemiy.Kononov on 11/5/2019.
 //
-#include "Util.h"
 #include "main.h"
 
-using namespace Main;
-
 int main() {
-    Initialize();
-    ll a = 0;
+    iostream::sync_with_stdio(false);
+    cin.tie(nullptr);
+    cout.tie(nullptr);
     return 0;
 }

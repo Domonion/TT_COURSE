@@ -4,6 +4,7 @@
 
 #include <regex>
 #include <string>
+#include <random>
 
 #ifndef A_UTIL_H
 #define A_UTIL_H
@@ -32,7 +33,6 @@ public:
     std::string const OPEN;
     std::string const CLOSE;
     std::regex const VARIABLE_REGEX;//TODO check if regex works
-
     static Util const &GetInstance();
 };
 
