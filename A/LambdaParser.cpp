@@ -74,12 +74,82 @@ LambdaParser::TreeNode *LambdaParser::Atom::GetValue() const {
     return value;
 }
 
-//{
+bool LambdaParser::Atom::IsVariable() const {
+    return dynamic_cast<Variable *>(value);
+}
+
+bool LambdaParser::Atom::TryCreate(std::string const &input, LambdaParser::TreeNode *&var) {
+    return false;
+}
+
+LambdaParser::Atom *LambdaParser::Atom::Create(std::string const &input) {
+    return nullptr;
+}
+
 ////TODO is it true that plain Variable * will pass?
-//if(input)
-//}
 //todo static threadlocal random in util
 ////todo 2. for use stop sumbols are: \ and eof
 
 LambdaParser::ParserException::ParserException(std::string const &_info, const LambdaParser::TreeNode *_node)
         : exception(), info(_info), node(_node) {}
+
+LambdaParser::Expression::~Expression() {
+
+}
+
+LambdaParser::Expression *LambdaParser::Expression::GetExpression() const {
+    return expr;
+}
+
+LambdaParser::Variable *LambdaParser::Expression::GetVariable() const {
+    return variable;
+}
+
+LambdaParser::Use *LambdaParser::Expression::GetUsage() const {
+    return usage;
+}
+
+bool LambdaParser::Expression::IsUsage() const {
+    return expr == nullptr;
+}
+
+bool LambdaParser::Expression::IsClosed() const {
+    return !IsUsage() && usage == nullptr;
+}
+
+std::string const &LambdaParser::Expression::ToString() const {
+    if (IsUsage()) {
+        return usage->ToString();
+    } else {
+        return (IsClosed() ? "(" : "(" + usage->ToString()) + "\\" + variable->ToString() + "." + expr->ToString() +
+               ")";
+    }
+}
+
+LambdaParser::Use::~Use() {
+
+}
+
+LambdaParser::Use *LambdaParser::Use::GetNext() const {
+    return next;
+}
+
+bool LambdaParser::Use::IsLast() const {
+    return next == nullptr;
+}
+
+LambdaParser::Atom *LambdaParser::Use::GetValue() const {
+    return value;
+}
+
+LambdaParser::Use::Use(LambdaParser::Atom *const _value, LambdaParser::Use *const _next) : value(_value), next(_next) {
+
+}
+
+std::string const &LambdaParser::Use::ToString() const {
+    if (next == nullptr)
+        return value->ToString();
+    else {
+        return Util::GetInstance().OPEN + next->ToString() + " " + value->ToString() + Util::GetInstance().CLOSE);
+    }
+}

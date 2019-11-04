@@ -57,7 +57,7 @@
 #define ub upper_bound
 #define mp make_pair
 #define pb pop_back
-#define is(fromVariable, toType, name) toType name = dynamic_cast<toType>(fromVariable)
+#define is(fromVariable, toType, name) auto name = dynamic_cast<toType>(fromVariable)
 
 using namespace std;
 using uint = unsigned int;

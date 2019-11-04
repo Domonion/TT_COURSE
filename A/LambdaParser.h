@@ -47,6 +47,8 @@ public:
 
         static bool TryCreate(std::string const &input, TreeNode *&var);
 
+        bool IsVariable() const;
+
         std::string const &ToString() const;
 
         TreeNode *GetValue() const;
@@ -59,7 +61,7 @@ public:
         Atom *const value;
         Use *const next;
 
-        Use(Atom *const _value, Use *const next);
+        Use(Atom *const _value, Use *const _next);
 
     public:
         static Atom *Create(std::string const &input);
@@ -70,6 +72,8 @@ public:
 
         Atom *GetValue() const;
 
+        bool IsLast() const;
+
         Use *GetNext() const;
 
         ~Use();
@@ -77,9 +81,27 @@ public:
 
     struct Expression : public TreeNode {
     private:
-        
+        Use *const usage;
+        Variable *const variable;
+        Expression *const expr;
     public:
         static Expression *Create(std::string const &input);
+
+        static bool TryCreate(std::string const &input, TreeNode *&var);
+
+        std::string const &ToString() const;
+
+        Use *GetUsage() const;
+
+        Variable *GetVariable() const;
+
+        Expression *GetExpression() const;
+
+        bool IsUsage() const;
+
+        bool IsClosed() const;
+
+        ~Expression();
     };
 
     static Expression *Parse(std::string input);
