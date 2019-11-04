@@ -36,7 +36,6 @@
 #include <fstream>
 #include <regex>
 
-
 #define TASK ""
 #define forn(i, s, n) for(auto (i) = (s); (i) < (n); (i)++)
 #define forb(i, s, n) for(auto (i) = (s); (i) >= (n); (i)--)
@@ -60,19 +59,20 @@
 #define pb pop_back
 #define is(fromVariable, toType, name) toType name = dynamic_cast<toType>(fromVariable)
 
-using namespace std;
+namespace Main {
+    using namespace std;
+    using uint = unsigned int;
+    using ll = long long;
+    using ull = unsigned long long;
+    using ld = long double;
+    thread_local mt19937 Randomer;
 
-typedef unsigned int uint;
-typedef long long ll;
-typedef unsigned long long ull;
-typedef long double ld;
-
-thread_local mt19937 randomer;
-
-void Initialize(){
-    iostream::sync_with_stdio(false);
-    cin.tie(nullptr);
-    cout.tie(nullptr);
-    randomer.seed();
+    void Initialize() {
+        iostream::sync_with_stdio(false);
+        cin.tie(nullptr);
+        cout.tie(nullptr);
+        Randomer.seed();
+    }
 }
+
 #endif //A_MAIN_H

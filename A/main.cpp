@@ -1,13 +1,13 @@
-#include "main.h"
+//
+// Created by Artemiy.Kononov on 11/5/2019.
+//
 #include "Util.h"
+#include "main.h"
 
-mt19937 randomer;
+using namespace Main;
 
 int main() {
     Initialize();
-    string input;
-    input.reserve(1024 * 1024 + 1);
-    getline(cin, input, '{');
-
+    ll a = 0;
     return 0;
 }
