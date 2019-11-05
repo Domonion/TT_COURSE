@@ -13,7 +13,7 @@
 struct Util {
 private:
 
-    static const Util mine;//TODO is it true that he will call default constructor?
+    //TODO is it true that he will call default constructor?
 
     Util();
 
@@ -32,8 +32,10 @@ private:
 public:
     static char const OPEN = '(';
     static char const CLOSE = ')';
-    std::regex const VARIABLE_REGEX;//TODO check if regex works
-    static Util const &GetInstance();
+    std::regex const VARIABLE_REGEX;
+    //TODO check if regex works
+    //TODO may be static too?
+    static const Util mine = Util();
 };
 
 

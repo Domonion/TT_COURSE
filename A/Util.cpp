@@ -5,7 +5,3 @@
 #include "Util.h"
 
 Util::Util() : VARIABLE_REGEX("(a..z)(a..z|0..9|’)*") {}
-
-Util const &Util::GetInstance() {
-    return mine;
-}

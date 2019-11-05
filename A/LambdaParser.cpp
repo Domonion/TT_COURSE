@@ -29,15 +29,14 @@ LambdaParser::Variable *LambdaParser::Variable::CreateUnchecked(std::string cons
 }
 
 LambdaParser::Variable *LambdaParser::Variable::Create(std::string const &input) {
-    if (!regex_match(input, Util::GetInstance().VARIABLE_REGEX)) {
+    if (!regex_match(input, Util::mine.VARIABLE_REGEX)) {
         throw new ParserException(input + " is not variable", nullptr);
     }
     return new Variable(input);
 }
 
 bool LambdaParser::Variable::TryCreate(std::string const &input, LambdaParser::TreeNode *&var) {
-    //TODO is it true that plain Variable * will pass?
-    if (regex_match(input, Util::GetInstance().VARIABLE_REGEX)) {
+    if (regex_match(input, Util::mine.VARIABLE_REGEX)) {
         var = new Variable(input);
         return true;
     }
@@ -68,15 +67,21 @@ bool LambdaParser::Atom::TryCreate(std::string const &input, LambdaParser::TreeN
     bool done = false;
     if (input[0] == Util::OPEN && input.back() == Util::CLOSE) {
         //TODO no substr optimization
-        Expression *expr = LambdaParser::Expression::Create(input.substr(1, size(input) - 2));
-        var = new Atom(expr);
-        done = true;
+        TreeNode *expr;
+        string buffer = input.substr(1, size(input) - 2);
+        trimSpaces(buffer);
+        if (LambdaParser::Expression::TryCreate(buffer, expr)) {
+            var = new Atom(expr);
+            done = true;
+        }
     }
     if (!done) {
         //TODO createUncheked
-        Variable *variable = LambdaParser::Variable::Create(input);
-        var = new Atom(variable);
-        done = true;
+        TreeNode *variable;
+        if (LambdaParser::Variable::TryCreate(input, variable)) {
+            var = new Atom(variable);
+            done = true;
+        }
     }
     return done;
 }
@@ -87,7 +92,7 @@ bool LambdaParser::Atom::IsVariable() const {
 
 std::string const &LambdaParser::Atom::ToString() const {
     if (is(value, Expression *const, expr)) {
-        return Util::GetInstance().OPEN + expr->ToString() + Util::GetInstance().CLOSE;
+        return Util::mine.OPEN + expr->ToString() + Util::mine.CLOSE;
     } else if (is(value, Variable *const, var)) {
         return var->ToString();
     } else {
@@ -113,11 +118,56 @@ LambdaParser::Use *LambdaParser::Use::Create(std::string const &input) {
     return dynamic_cast<LambdaParser::Use *>(var);
 }
 
+bool LambdaParser::Use::TryCreate(std::string const &input, LambdaParser::TreeNode *&var) {
+    int ind = 0;
+    bool res = false;
+    vec<Atom *> atoms;
+    while (ind < size(input)) {
+        if (input[ind] == Util::OPEN) {
+            int next = findClosed(input, ind);
+            if (next != -1) {
+                LambdaParser::TreeNode *atom;
+                if (LambdaParser::Atom::TryCreate(input.substr(ind, next - ind + 1), atom)) {
+                    atoms.push_back(dynamic_cast<Atom *>(atom));
+                    ind = next;
+                } else {
+                    break;
+                }
+            } else {
+                break;
+            }
+        } else if ('a' <= input[ind] && input[ind] <= 'z') {
+            int was = ind;
+            while (ind < size(input) &&
+                   (('a' <= input[ind] && input[ind] <= 'z') || ('0' <= input[ind] && input[ind] <= '9') ||
+                    (input[ind] != '(' && input[ind] != ')' && input[ind] != '.' && input[ind] != '\\')))
+                ind++;
+            ind--;
+            LambdaParser::TreeNode *atom;
+            if (LambdaParser::Atom::TryCreate(input.substr(was, ind - was + 1), atom)) {
+                atoms.push_back(dynamic_cast<Atom *>(atom));
+            } else {
+                break;
+            }
+        }
+        ind++;
+    }
+    if (ind >= size(input)) {
+        res = true;
+        LambdaParser::Use *last = nullptr;
+        fora(i, atoms) {
+            last = new Use(i, last);
+        }
+        var = last;
+    }
+    return res;
+}
+
 std::string const &LambdaParser::Use::ToString() const {
     if (next == nullptr)
         return value->ToString();
     else {
-        return Util::GetInstance().OPEN + next->ToString() + " " + value->ToString() + Util::GetInstance().CLOSE;
+        return Util::OPEN + next->ToString() + " " + value->ToString() + Util::CLOSE;
     }
 }
 
@@ -136,10 +186,6 @@ LambdaParser::Use *LambdaParser::Use::GetNext() const {
 LambdaParser::Use::~Use() {
 
 }
-
-////TODO is it true that plain Variable * will pass?
-//todo static threadlocal random in util
-////todo 2. for use stop sumbols are: \ and eof
 
 LambdaParser::Expression *LambdaParser::Expression::Create(std::string const &input) {
     LambdaParser::TreeNode *var = nullptr;
@@ -182,6 +228,10 @@ LambdaParser::Expression::~Expression() {
 
 }
 
+bool LambdaParser::Expression::TryCreate(std::string const &input, LambdaParser::TreeNode *&var) {
+
+}
+
 LambdaParser::Expression *LambdaParser::Parse(std::string input) {
     whitespaceToSpace(input);
     trimSpaces(input);
@@ -198,6 +248,10 @@ void LambdaParser::whitespaceToSpace(std::string &out) {
 
 void LambdaParser::trimSpaces(std::string &out) {
     out.resize(unique(all(out)) - out.begin());
+    int len = 0;
+    while (len < size(out) && out[len] == ' ') ++len;
+    out.erase(0, len);
+    while (!out.empty() && out.back() == ' ') out.pop_back();
 }
 
 LambdaParser::ParserException::ParserException(std::string const &_info, const LambdaParser::TreeNode *_node)
