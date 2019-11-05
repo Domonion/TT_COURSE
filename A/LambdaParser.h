@@ -64,7 +64,7 @@ public:
         Use(Atom *const _value, Use *const _next);
 
     public:
-        static Atom *Create(std::string const &input);
+        static Use *Create(std::string const &input);
 
         static bool TryCreate(std::string const &input, TreeNode *&var);
 

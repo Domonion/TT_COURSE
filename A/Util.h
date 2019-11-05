@@ -30,8 +30,8 @@ private:
     Util const &operator=(Util &&other) = delete;
 
 public:
-    std::string const OPEN;
-    std::string const CLOSE;
+    static char const OPEN = '(';
+    static char const CLOSE = ')';
     std::regex const VARIABLE_REGEX;//TODO check if regex works
     static Util const &GetInstance();
 };

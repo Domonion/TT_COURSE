@@ -6,6 +6,8 @@
 #include "Util.h"
 #include "main.h"
 
+LambdaParser::TreeNode::~TreeNode() {}
+
 void LambdaParser::whitespaceToSpace(std::string &out) {
     foraa(i, out) {
         if (isspace(i)) {
@@ -78,12 +80,43 @@ bool LambdaParser::Atom::IsVariable() const {
     return dynamic_cast<Variable *>(value);
 }
 
+int findClosed(string const &input, int startInd = 0) {
+    if (input[startInd] == Util::OPEN) {
+        int balance = 1;
+        forn(i, startInd + 1, size(input)) {
+            if (input[i] == Util::CLOSE && --balance == 0) {
+                return i;
+            } else if (input[i] == Util::OPEN) {
+                ++balance;
+            }
+        }
+    }
+    return -1;
+}
+
 bool LambdaParser::Atom::TryCreate(std::string const &input, LambdaParser::TreeNode *&var) {
-    return false;
+    bool done = false;
+    if (input[0] == Util::OPEN && input.back() == Util::CLOSE) {
+        //TODO no substr optimization
+        Expression *expr = LambdaParser::Expression::Create(input.substr(1, size(input) - 2));
+        var = new Atom(expr);
+        done = true;
+    }
+    if (!done) {
+        //TODO createUncheked
+        Variable *variable = LambdaParser::Variable::Create(input);
+        var = new Atom(variable);
+        done = true;
+    }
+    return done;
 }
 
 LambdaParser::Atom *LambdaParser::Atom::Create(std::string const &input) {
-    return nullptr;
+    LambdaParser::TreeNode *var = nullptr;
+    if (!TryCreate(input, var)) {
+        throw ParserException("didn't create Atom from input: " + input, nullptr);
+    }
+    return dynamic_cast<LambdaParser::Atom *>(var);
 }
 
 ////TODO is it true that plain Variable * will pass?
@@ -126,6 +159,14 @@ std::string const &LambdaParser::Expression::ToString() const {
     }
 }
 
+LambdaParser::Expression *LambdaParser::Expression::Create(std::string const &input) {
+    LambdaParser::TreeNode *var = nullptr;
+    if (!TryCreate(input, var)) {
+        throw ParserException("didn't create Atom from input: " + input, nullptr);
+    }
+    return dynamic_cast<LambdaParser::Expression *>(var);
+}
+
 LambdaParser::Use::~Use() {
 
 }
@@ -150,6 +191,20 @@ std::string const &LambdaParser::Use::ToString() const {
     if (next == nullptr)
         return value->ToString();
     else {
-        return Util::GetInstance().OPEN + next->ToString() + " " + value->ToString() + Util::GetInstance().CLOSE);
+        return Util::GetInstance().OPEN + next->ToString() + " " + value->ToString() + Util::GetInstance().CLOSE;
     }
 }
+
+LambdaParser::Use *LambdaParser::Use::Create(std::string const &input) {
+    LambdaParser::TreeNode *var = nullptr;
+    if (!TryCreate(input, var)) {
+        throw ParserException("didn't create Atom from input: " + input, nullptr);
+    }
+    return dynamic_cast<LambdaParser::Use *>(var);
+}
+
+bool LambdaParser::Use::TryCreate(std::string const &input, LambdaParser::TreeNode *&var) {
+    return false;
+}
+
+
