@@ -29,14 +29,14 @@ LambdaParser::Variable *LambdaParser::Variable::CreateUnchecked(std::string cons
 }
 
 LambdaParser::Variable *LambdaParser::Variable::Create(std::string const &input) {
-    if (!regex_match(input, Util::mine.VARIABLE_REGEX)) {
+    if (!regex_match(input, Util::VARIABLE_REGEX)) {
         throw new ParserException(input + " is not variable", nullptr);
     }
     return new Variable(input);
 }
 
 bool LambdaParser::Variable::TryCreate(std::string const &input, LambdaParser::TreeNode *&var) {
-    if (regex_match(input, Util::mine.VARIABLE_REGEX)) {
+    if (regex_match(input, Util::VARIABLE_REGEX)) {
         var = new Variable(input);
         return true;
     }
@@ -92,7 +92,7 @@ bool LambdaParser::Atom::IsVariable() const {
 
 std::string const &LambdaParser::Atom::ToString() const {
     if (is(value, Expression *const, expr)) {
-        return Util::mine.OPEN + expr->ToString() + Util::mine.CLOSE;
+        return Util::OPEN + expr->ToString() + Util::CLOSE;
     } else if (is(value, Variable *const, var)) {
         return var->ToString();
     } else {
@@ -199,8 +199,7 @@ std::string const &LambdaParser::Expression::ToString() const {
     if (IsUsage()) {
         return usage->ToString();
     } else {
-        return (IsClosed() ? "(" : "(" + usage->ToString()) + "\\" + variable->ToString() + "." + expr->ToString() +
-               ")";
+        return (IsClosed() ? "(" : "(" + usage->ToString()) + "\\" + variable->ToString() + "." + expr->ToString() + ")";
     }
 }
 
@@ -229,7 +228,7 @@ LambdaParser::Expression::~Expression() {
 }
 
 bool LambdaParser::Expression::TryCreate(std::string const &input, LambdaParser::TreeNode *&var) {
-
+    return false;
 }
 
 LambdaParser::Expression *LambdaParser::Parse(std::string input) {
