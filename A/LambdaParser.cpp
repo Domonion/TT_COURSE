@@ -171,9 +171,16 @@ bool LambdaParser::Expression::TryCreate(std::string const &input, LambdaParser:
     } else if (input[0] == '\\') {
         int ind = 0;
         while (input[++ind] != '.');
-        LambdaParser::Variable *variable = LambdaParser::Variable::Create(input.substr(1, ind - 1));
-        LambdaParser::Expression *expr = LambdaParser::Expression::Create(input.substr(ind + 1));
-        var = new Expression(nullptr, variable, expr);
+        LambdaParser::TreeNode *variable = nullptr;
+        if (!LambdaParser::Variable::TryCreate(input.substr(1, ind - 1), variable)) {
+            return false;
+        }
+        LambdaParser::TreeNode *expr = nullptr;
+        if (!LambdaParser::Expression::TryCreate(input.substr(ind + 1), expr)) {
+            return false;
+        }
+        var = new Expression(nullptr, dynamic_cast<LambdaParser::Variable *>(variable),
+                             dynamic_cast<LambdaParser::Expression *>(expr));
         return true;
         ///expression without use
     } else {
@@ -181,13 +188,23 @@ bool LambdaParser::Expression::TryCreate(std::string const &input, LambdaParser:
         int ind = findCharWithBalance(input, '\\');
         if (ind == -1)
             return false;
-        LambdaParser::Use *use = LambdaParser::Use::Create(input.substr(0, ind));
+        LambdaParser::TreeNode *use = nullptr;
+        if (!LambdaParser::Use::TryCreate(input.substr(0, ind), use)) {
+            return false;
+        }
         /// here ind should be \.
         int was = ind + 1;
         while (input[++ind] != '.');
-        LambdaParser::Variable *variable = LambdaParser::Variable::Create(input.substr(was, ind - was));
-        LambdaParser::Expression *expr = LambdaParser::Expression::Create(input.substr(ind + 1));
-        var = new Expression(use, variable, expr);
+        LambdaParser::TreeNode *variable = nullptr;
+        if (!LambdaParser::Variable::TryCreate(input.substr(was, ind - was), variable)) {
+            return false;
+        }
+        LambdaParser::TreeNode *expr = nullptr;
+        if (!LambdaParser::Expression::TryCreate(input.substr(ind + 1), expr)) {
+            return false;
+        }
+        var = new Expression(dynamic_cast<LambdaParser::Use *>(use), dynamic_cast<LambdaParser::Variable *>(variable),
+                             dynamic_cast<LambdaParser::Expression *>(expr));
         return true;
     }
 }
@@ -226,7 +243,9 @@ LambdaParser::Expression::~Expression() {}
 LambdaParser::Expression *LambdaParser::Parse(std::string input) {
     whitespaceToSpace(input);
     trimSpaces(input);
-    return Expression::Create(input);
+    TreeNode * res = nullptr;
+    Expression::TryCreate(input, res);
+    return dynamic_cast<Expression*>(res);
 }
 
 void LambdaParser::whitespaceToSpace(std::string &out) {
@@ -240,7 +259,8 @@ void LambdaParser::whitespaceToSpace(std::string &out) {
 void LambdaParser::trimSpaces(std::string &out) {
     string res;
     res.push_back(out[0]);
-    forn(i, 1, size(out))if (out[i] != ' ' || out[i] != out[i - 1])
+    forn(i, 1, size(out))
+        if (out[i] != ' ' || out[i] != out[i - 1])
             res.push_back(out[i]);
     out = res;
     int len = 0;
