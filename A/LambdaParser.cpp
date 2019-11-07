@@ -93,7 +93,7 @@ bool LambdaParser::Atom::IsVariable() const {
 
 std::string LambdaParser::Atom::ToString() const {
     if (is(value, Expression *const, expr)) {
-        return Util::OPEN + expr->ToString() + Util::CLOSE;
+        return expr->ToString();
     } else if (is(value, Variable *const, var)) {
         return var->ToString();
     } else {
@@ -234,7 +234,7 @@ std::string LambdaParser::Expression::ToString() const {
     if (IsUsage()) {
         return usage->ToString();
     } else {
-        return (IsClosed() ? "(" : "(" + usage->ToString()) + "\\" + variable->ToString() + "." + expr->ToString() + ")";
+        return (IsClosed() ? "" : "(" + usage->ToString() + " ") + "(\\" + variable->ToString() + "." + expr->ToString() + ")" + (IsClosed() ? "" : ")");
     }
 }
 
