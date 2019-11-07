@@ -108,14 +108,6 @@ private:
     static void whitespaceToSpace(std::string &out);
 
     static void trimSpaces(std::string &out);
-
-    struct ParserException : public std::exception {
-    private:
-        std::string const info;
-        TreeNode const *node;
-    public:
-        ParserException(std::string const &_info, TreeNode const *_node);
-    };
 };
 
 
