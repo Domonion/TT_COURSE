@@ -25,8 +25,6 @@ public:
     public:
         static Variable *CreateUnchecked(std::string const &input);
 
-        static Variable *Create(std::string const &input);
-
         static bool TryCreate(std::string const &input, TreeNode *&var);
 
         std::string const &GetName() const;
@@ -43,7 +41,6 @@ public:
         Atom(TreeNode *const _value);
 
     public:
-        static Atom *Create(std::string const &input);
 
         static bool TryCreate(std::string const &input, TreeNode *&var);
 
@@ -64,7 +61,6 @@ public:
         Use(Atom *const _value, Use *const _next);
 
     public:
-        static Use *Create(std::string const &input);
 
         static bool TryCreate(std::string const &input, TreeNode *&var);
 
@@ -84,9 +80,10 @@ public:
         Use *const usage;
         Variable *const variable;
         Expression *const expr;
-        Expression(Use * use, Variable * var, Expression * exp);
+
+        Expression(Use *use, Variable *var, Expression *exp);
+
     public:
-        static Expression *Create(std::string const &input);
 
         static bool TryCreate(std::string const &input, TreeNode *&var);
 

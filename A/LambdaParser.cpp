@@ -6,9 +6,9 @@
 #include "Util.h"
 #include "main.h"
 
-int findCharWithBalance(string const &input, char c, int balance = 0, int startInd = 0, int endInd = 100500) {
+int findCharWithBalance(string const &input, char c, int balance = 0, int startInd = 0, int endInd = 2000000000) {
     int now_balance = 0;
-    if (endInd == 10050) endInd = size(input);
+    if (endInd == 2000000000) endInd = size(input);
     forn(i, startInd, endInd) {
         if (input[i] == Util::CLOSE) {
             --now_balance;
@@ -26,13 +26,6 @@ LambdaParser::TreeNode::~TreeNode() {}
 LambdaParser::Variable::Variable(std::string const &_name) : name(_name) {}
 
 LambdaParser::Variable *LambdaParser::Variable::CreateUnchecked(std::string const &input) {
-    return new Variable(input);
-}
-
-LambdaParser::Variable *LambdaParser::Variable::Create(std::string const &input) {
-    if (!regex_match(input, Util::VARIABLE_REGEX)) {
-        throw new ParserException(input + " is not variable", nullptr);
-    }
     return new Variable(input);
 }
 
@@ -56,18 +49,9 @@ LambdaParser::Variable::~Variable() {}
 
 LambdaParser::Atom::Atom(LambdaParser::TreeNode *const _value) : value(_value) {}
 
-LambdaParser::Atom *LambdaParser::Atom::Create(std::string const &input) {
-    LambdaParser::TreeNode *var = nullptr;
-    if (!TryCreate(input, var)) {
-        throw ParserException("didn't create Atom from input: " + input, nullptr);
-    }
-    return dynamic_cast<LambdaParser::Atom *>(var);
-}
-
 bool LambdaParser::Atom::TryCreate(std::string const &input, LambdaParser::TreeNode *&var) {
     bool done = false;
     if (input[0] == Util::OPEN && input.back() == Util::CLOSE) {
-        //TODO no substr optimization
         TreeNode *expr;
         string buffer = input.substr(1, size(input) - 2);
         trimSpaces(buffer);
@@ -77,7 +61,6 @@ bool LambdaParser::Atom::TryCreate(std::string const &input, LambdaParser::TreeN
         }
     }
     if (!done) {
-        //TODO createUncheked
         TreeNode *variable;
         if (LambdaParser::Variable::TryCreate(input, variable)) {
             var = new Atom(variable);
@@ -107,17 +90,7 @@ LambdaParser::TreeNode *LambdaParser::Atom::GetValue() const {
 
 LambdaParser::Atom::~Atom() {}
 
-LambdaParser::Use::Use(LambdaParser::Atom *const _value, LambdaParser::Use *const _next) : value(_value), next(_next) {
-
-}
-
-LambdaParser::Use *LambdaParser::Use::Create(std::string const &input) {
-    LambdaParser::TreeNode *var = nullptr;
-    if (!TryCreate(input, var)) {
-        throw ParserException("didn't create Atom from input: " + input, nullptr);
-    }
-    return dynamic_cast<LambdaParser::Use *>(var);
-}
+LambdaParser::Use::Use(LambdaParser::Atom *const _value, LambdaParser::Use *const _next) : value(_value), next(_next) {}
 
 bool LambdaParser::Use::TryCreate(std::string const &input, LambdaParser::TreeNode *&var) {
     int ind = 0;
@@ -140,7 +113,8 @@ bool LambdaParser::Use::TryCreate(std::string const &input, LambdaParser::TreeNo
         } else if ('a' <= input[ind] && input[ind] <= 'z') {
             int was = ind;
             while (ind < size(input) &&
-                   (('a' <= input[ind] && input[ind] <= 'z') || ('0' <= input[ind] && input[ind] <= '9') || input.substr(ind, 1) == string("\u2019")))
+                   (('a' <= input[ind] && input[ind] <= 'z') || ('0' <= input[ind] && input[ind] <= '9') ||
+                    input.substr(ind, 1) == string("\u2019")))
                 ind++;
             LambdaParser::TreeNode *atom;
             if (LambdaParser::Atom::TryCreate(input.substr(was, ind - was), atom)) {
@@ -148,8 +122,8 @@ bool LambdaParser::Use::TryCreate(std::string const &input, LambdaParser::TreeNo
             } else {
                 break;
             }
-            if(input[ind] != ' ') ind--;
-        } else if(input[ind] != ' ')
+            if (input[ind] != ' ') ind--;
+        } else if (input[ind] != ' ')
             return false;
         ind++;
     }
@@ -184,26 +158,14 @@ LambdaParser::Use *LambdaParser::Use::GetNext() const {
     return next;
 }
 
-LambdaParser::Use::~Use() {
-
-}
+LambdaParser::Use::~Use() {}
 
 LambdaParser::Expression::Expression(LambdaParser::Use *use, LambdaParser::Variable *var, LambdaParser::Expression *exp)
-        : usage(use), variable(var), expr(exp) {
-
-}
-
-LambdaParser::Expression *LambdaParser::Expression::Create(std::string const &input) {
-    LambdaParser::TreeNode *var = nullptr;
-    if (!TryCreate(input, var)) {
-        throw ParserException("didn't create Atom from input: " + input, nullptr);
-    }
-    return dynamic_cast<LambdaParser::Expression *>(var);
-}
+        : usage(use), variable(var), expr(exp) {}
 
 bool LambdaParser::Expression::TryCreate(std::string const &input, LambdaParser::TreeNode *&var) {
     if (LambdaParser::Use::TryCreate(input, var)) {
-        var = new Expression(dynamic_cast<Use*>(var), nullptr, nullptr);
+        var = new Expression(dynamic_cast<Use *>(var), nullptr, nullptr);
         ///expression is plain use
         return true;
     } else if (input[0] == '\\') {
@@ -228,14 +190,14 @@ bool LambdaParser::Expression::TryCreate(std::string const &input, LambdaParser:
         var = new Expression(use, variable, expr);
         return true;
     }
-    return false;
 }
 
 std::string LambdaParser::Expression::ToString() const {
     if (IsUsage()) {
         return usage->ToString();
     } else {
-        return (IsClosed() ? "" : "(" + usage->ToString() + " ") + "(\\" + variable->ToString() + "." + expr->ToString() + ")" + (IsClosed() ? "" : ")");
+        return (IsClosed() ? "" : "(" + usage->ToString() + " ") + "(\\" + variable->ToString() + "." + expr->ToString() +
+               ")" + (IsClosed() ? "" : ")");
     }
 }
 
@@ -259,9 +221,7 @@ bool LambdaParser::Expression::IsClosed() const {
     return !IsUsage() && usage == nullptr;
 }
 
-LambdaParser::Expression::~Expression() {
-
-}
+LambdaParser::Expression::~Expression() {}
 
 LambdaParser::Expression *LambdaParser::Parse(std::string input) {
     whitespaceToSpace(input);
@@ -280,9 +240,8 @@ void LambdaParser::whitespaceToSpace(std::string &out) {
 void LambdaParser::trimSpaces(std::string &out) {
     string res;
     res.push_back(out[0]);
-    forn(i, 1, size(out))
-    if(out[i] != ' ' || out[i] != out[i - 1])
-        res.push_back(out[i]);
+    forn(i, 1, size(out))if (out[i] != ' ' || out[i] != out[i - 1])
+            res.push_back(out[i]);
     out = res;
     int len = 0;
     while (len < size(out) && out[len] == ' ') ++len;

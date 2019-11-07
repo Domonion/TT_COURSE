@@ -28,7 +28,6 @@ public:
     static char const OPEN = '(';
     static char const CLOSE = ')';
     static std::regex const VARIABLE_REGEX;
-    //TODO check if regex works
 };
 
 

@@ -4,4 +4,5 @@
 
 #include "Util.h"
 
+//todo regex may be bad
 std::regex const Util::VARIABLE_REGEX = std::regex("[a-z][a-z|0-9|’]*");
