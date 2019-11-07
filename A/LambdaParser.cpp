@@ -148,6 +148,7 @@ bool LambdaParser::Use::TryCreate(std::string const &input, LambdaParser::TreeNo
             } else {
                 break;
             }
+            if(input[ind] != ' ') ind--;
         } else if(input[ind] != ' ')
             return false;
         ind++;
@@ -277,7 +278,12 @@ void LambdaParser::whitespaceToSpace(std::string &out) {
 }
 
 void LambdaParser::trimSpaces(std::string &out) {
-    out.resize(unique(all(out)) - out.begin());
+    string res;
+    res.push_back(out[0]);
+    forn(i, 1, size(out))
+    if(out[i] != ' ' || out[i] != out[i - 1])
+        res.push_back(out[i]);
+    out = res;
     int len = 0;
     while (len < size(out) && out[len] == ' ') ++len;
     out.erase(0, len);
