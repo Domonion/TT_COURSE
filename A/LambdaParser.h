@@ -11,7 +11,7 @@ struct LambdaParser {
 public:
     struct TreeNode {
     public:
-        virtual std::string const &ToString() const = 0;
+        virtual std::string ToString() const = 0;
 
         virtual ~TreeNode() = 0;
     };
@@ -31,7 +31,7 @@ public:
 
         std::string const &GetName() const;
 
-        std::string const &ToString() const;
+        std::string ToString() const;
 
         ~Variable();
     };
@@ -49,7 +49,7 @@ public:
 
         bool IsVariable() const;
 
-        std::string const &ToString() const;
+        std::string ToString() const;
 
         TreeNode *GetValue() const;
 
@@ -68,7 +68,7 @@ public:
 
         static bool TryCreate(std::string const &input, TreeNode *&var);
 
-        std::string const &ToString() const;
+        std::string ToString() const;
 
         Atom *GetValue() const;
 
@@ -84,12 +84,13 @@ public:
         Use *const usage;
         Variable *const variable;
         Expression *const expr;
+        Expression(Use * use, Variable * var, Expression * exp);
     public:
         static Expression *Create(std::string const &input);
 
         static bool TryCreate(std::string const &input, TreeNode *&var);
 
-        std::string const &ToString() const;
+        std::string ToString() const;
 
         Use *GetUsage() const;
 

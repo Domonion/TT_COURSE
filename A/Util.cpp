@@ -4,4 +4,4 @@
 
 #include "Util.h"
 
-std::regex const Util::VARIABLE_REGEX = std::regex("(a..z)(a..z|0..9|’)*");
+std::regex const Util::VARIABLE_REGEX = std::regex("[a-z][a-z|0-9|’]*");

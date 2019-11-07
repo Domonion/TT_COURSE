@@ -6,16 +6,17 @@
 #include "Util.h"
 #include "main.h"
 
-int findClosed(string const &input, int startInd = 0) {
-    if (input[startInd] == Util::OPEN) {
-        int balance = 1;
-        forn(i, startInd + 1, size(input)) {
-            if (input[i] == Util::CLOSE && --balance == 0) {
-                return i;
-            } else if (input[i] == Util::OPEN) {
-                ++balance;
-            }
+int findCharWithBalance(string const &input, char c, int balance = 0, int startInd = 0, int endInd = 100500) {
+    int now_balance = 0;
+    if (endInd == 10050) endInd = size(input);
+    forn(i, startInd, endInd) {
+        if (input[i] == Util::CLOSE) {
+            --now_balance;
+        } else if (input[i] == Util::OPEN) {
+            ++now_balance;
         }
+        if (now_balance == balance && input[i] == c)
+            return i;
     }
     return -1;
 }
@@ -47,7 +48,7 @@ std::string const &LambdaParser::Variable::GetName() const {
     return name;
 }
 
-std::string const &LambdaParser::Variable::ToString() const {
+std::string LambdaParser::Variable::ToString() const {
     return GetName();
 }
 
@@ -90,7 +91,7 @@ bool LambdaParser::Atom::IsVariable() const {
     return dynamic_cast<Variable *>(value);
 }
 
-std::string const &LambdaParser::Atom::ToString() const {
+std::string LambdaParser::Atom::ToString() const {
     if (is(value, Expression *const, expr)) {
         return Util::OPEN + expr->ToString() + Util::CLOSE;
     } else if (is(value, Variable *const, var)) {
@@ -124,7 +125,7 @@ bool LambdaParser::Use::TryCreate(std::string const &input, LambdaParser::TreeNo
     vec<Atom *> atoms;
     while (ind < size(input)) {
         if (input[ind] == Util::OPEN) {
-            int next = findClosed(input, ind);
+            int next = findCharWithBalance(input, Util::CLOSE, 0, ind);
             if (next != -1) {
                 LambdaParser::TreeNode *atom;
                 if (LambdaParser::Atom::TryCreate(input.substr(ind, next - ind + 1), atom)) {
@@ -139,17 +140,16 @@ bool LambdaParser::Use::TryCreate(std::string const &input, LambdaParser::TreeNo
         } else if ('a' <= input[ind] && input[ind] <= 'z') {
             int was = ind;
             while (ind < size(input) &&
-                   (('a' <= input[ind] && input[ind] <= 'z') || ('0' <= input[ind] && input[ind] <= '9') ||
-                    (input[ind] != '(' && input[ind] != ')' && input[ind] != '.' && input[ind] != '\\')))
+                   (('a' <= input[ind] && input[ind] <= 'z') || ('0' <= input[ind] && input[ind] <= '9') || input.substr(ind, 1) == string("\u2019")))
                 ind++;
-            ind--;
             LambdaParser::TreeNode *atom;
-            if (LambdaParser::Atom::TryCreate(input.substr(was, ind - was + 1), atom)) {
+            if (LambdaParser::Atom::TryCreate(input.substr(was, ind - was), atom)) {
                 atoms.push_back(dynamic_cast<Atom *>(atom));
             } else {
                 break;
             }
-        }
+        } else if(input[ind] != ' ')
+            return false;
         ind++;
     }
     if (ind >= size(input)) {
@@ -163,7 +163,7 @@ bool LambdaParser::Use::TryCreate(std::string const &input, LambdaParser::TreeNo
     return res;
 }
 
-std::string const &LambdaParser::Use::ToString() const {
+std::string LambdaParser::Use::ToString() const {
     if (next == nullptr)
         return value->ToString();
     else {
@@ -187,6 +187,11 @@ LambdaParser::Use::~Use() {
 
 }
 
+LambdaParser::Expression::Expression(LambdaParser::Use *use, LambdaParser::Variable *var, LambdaParser::Expression *exp)
+        : usage(use), variable(var), expr(exp) {
+
+}
+
 LambdaParser::Expression *LambdaParser::Expression::Create(std::string const &input) {
     LambdaParser::TreeNode *var = nullptr;
     if (!TryCreate(input, var)) {
@@ -195,7 +200,37 @@ LambdaParser::Expression *LambdaParser::Expression::Create(std::string const &in
     return dynamic_cast<LambdaParser::Expression *>(var);
 }
 
-std::string const &LambdaParser::Expression::ToString() const {
+bool LambdaParser::Expression::TryCreate(std::string const &input, LambdaParser::TreeNode *&var) {
+    if (LambdaParser::Use::TryCreate(input, var)) {
+        var = new Expression(dynamic_cast<Use*>(var), nullptr, nullptr);
+        ///expression is plain use
+        return true;
+    } else if (input[0] == '\\') {
+        int ind = 0;
+        while (input[++ind] != '.');
+        LambdaParser::Variable *variable = LambdaParser::Variable::Create(input.substr(1, ind - 1));
+        LambdaParser::Expression *expr = LambdaParser::Expression::Create(input.substr(ind + 1));
+        var = new Expression(nullptr, variable, expr);
+        return true;
+        ///expression without use
+    } else {
+        ///expression with use
+        int ind = findCharWithBalance(input, '\\');
+        if (ind == -1)
+            return false;
+        LambdaParser::Use *use = LambdaParser::Use::Create(input.substr(0, ind));
+        /// here ind should be \.
+        int was = ind + 1;
+        while (input[++ind] != '.');
+        LambdaParser::Variable *variable = LambdaParser::Variable::Create(input.substr(was, ind - was));
+        LambdaParser::Expression *expr = LambdaParser::Expression::Create(input.substr(ind + 1));
+        var = new Expression(use, variable, expr);
+        return true;
+    }
+    return false;
+}
+
+std::string LambdaParser::Expression::ToString() const {
     if (IsUsage()) {
         return usage->ToString();
     } else {
@@ -225,10 +260,6 @@ bool LambdaParser::Expression::IsClosed() const {
 
 LambdaParser::Expression::~Expression() {
 
-}
-
-bool LambdaParser::Expression::TryCreate(std::string const &input, LambdaParser::TreeNode *&var) {
-    return false;
 }
 
 LambdaParser::Expression *LambdaParser::Parse(std::string input) {
