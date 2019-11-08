@@ -6,6 +6,10 @@
 #include "Util.h"
 #include "main.h"
 
+bool valid(char c) {
+    return c != '.' && c != '\\' && c != ' ' && c != '(' && c != ')';
+}
+
 int findCharWithBalance(string const &input, char c, int balance = 0, int startInd = 0, int endInd = 2000000000) {
     int now_balance = 0;
     endInd = min(endInd, size(input));
@@ -30,11 +34,10 @@ LambdaParser::Variable *LambdaParser::Variable::CreateUnchecked(std::string inpu
 }
 
 bool LambdaParser::Variable::TryCreate(std::string input, LambdaParser::TreeNode *&var) {
-    if (regex_match(input, Util::VARIABLE_REGEX)) {
-        var = new Variable(input);
-        return true;
-    }
-    return false;
+    fora(i, input)if (!valid(i))
+            return false;
+    var = new Variable(input);
+    return true;
 }
 
 std::string LambdaParser::Variable::GetName() const {
@@ -51,21 +54,22 @@ LambdaParser::Atom::Atom(LambdaParser::TreeNode *const _value) : value(_value) {
 
 bool LambdaParser::Atom::TryCreate(std::string input, LambdaParser::TreeNode *&var) {
     trimSpaces(input);
-    if(input.empty()) return false;
+    if (input.empty())
+        throw exception();
     if (input[0] == Util::OPEN && input.back() == Util::CLOSE) {
         TreeNode *expr;
         if (LambdaParser::Expression::TryCreate(input.substr(1, size(input) - 2), expr)) {
             var = new Atom(expr);
             return true;
         }
-        return false;
+        throw exception();
     }
     TreeNode *variable;
     if (LambdaParser::Variable::TryCreate(input, variable)) {
         var = new Atom(variable);
         return true;
     }
-    return false;
+    throw exception();
 }
 
 bool LambdaParser::Atom::IsVariable() const {
@@ -90,9 +94,10 @@ LambdaParser::Atom::~Atom() {}
 
 LambdaParser::Use::Use(LambdaParser::Atom *const _value, LambdaParser::Use *const _next) : value(_value), next(_next) {}
 
-bool LambdaParser::Use::TryCreate(std::string input, LambdaParser::TreeNode *&var) {
+bool LambdaParser::Use::TryCreate(std::string input, LambdaParser::TreeNode *&var) {//TODO shit there shit happens
     trimSpaces(input);
-    if(input.empty()) return false;
+    if (input.empty())
+        throw exception();
     int ind = 0;
     bool res = false;
     vec<Atom *> atoms;
@@ -105,30 +110,25 @@ bool LambdaParser::Use::TryCreate(std::string input, LambdaParser::TreeNode *&va
                     atoms.push_back(dynamic_cast<Atom *>(atom));
                     ind = next;
                 } else {
-                    ind = 0;
-                    break;
+                    throw exception();
                 }
             } else {
-                ind = 0;
-                break;
+                throw exception();
             }
         } else if ('a' <= input[ind] && input[ind] <= 'z') {
-            //TODO problem with variable!
             int was = ind;
-            while (ind < size(input) &&
-                   (('a' <= input[ind] && input[ind] <= 'z') || ('0' <= input[ind] && input[ind] <= '9') ||
-                    input.substr(ind, 1) == string("\u2019")))
+            while (ind < size(input) && valid(input[ind]))
                 ind++;
             LambdaParser::TreeNode *atom;
             if (LambdaParser::Atom::TryCreate(input.substr(was, ind - was), atom)) {
                 atoms.push_back(dynamic_cast<Atom *>(atom));
                 ind--;
             } else {
-                ind = 0;
-                break;
+                throw exception();
             }
-        } else if (input[ind] != ' ')
+        } else if (input[ind] == '\\' || input[ind] == '.') {
             return false;
+        }
         ind++;
     }
     if (ind >= size(input) && size(atoms) > 0) {
@@ -169,22 +169,23 @@ LambdaParser::Expression::Expression(LambdaParser::Use *use, LambdaParser::Varia
 
 bool LambdaParser::Expression::TryCreate(std::string input, LambdaParser::TreeNode *&var) {
     trimSpaces(input);
-    if(input.empty()) return false;
+    if (input.empty())
+        throw exception();
     if (LambdaParser::Use::TryCreate(input, var)) {
         var = new Expression(dynamic_cast<Use *>(var), nullptr, nullptr);
-        ///expression is plain use
         return true;
     } else if (input[0] == '\\') {
         int ind = 0;
         while (ind < size(input) && input[ind] != '.') ind++;
-        if(ind == size(input)) return false;
+        if (ind == size(input))
+            throw exception();
         LambdaParser::TreeNode *variable = nullptr;
         if (!LambdaParser::Variable::TryCreate(input.substr(1, ind - 1), variable)) {
-            return false;
+            throw exception();
         }
         LambdaParser::TreeNode *expr = nullptr;
         if (!LambdaParser::Expression::TryCreate(input.substr(ind + 1), expr)) {
-            return false;
+            throw exception();
         }
         var = new Expression(nullptr, dynamic_cast<LambdaParser::Variable *>(variable),
                              dynamic_cast<LambdaParser::Expression *>(expr));
@@ -193,23 +194,27 @@ bool LambdaParser::Expression::TryCreate(std::string input, LambdaParser::TreeNo
     } else {
         ///expression with use
         int ind = findCharWithBalance(input, '\\');
-        if (ind == -1)
+        if (ind == -1) {
+            fora(i, input)if (i == '\\')
+                    throw exception();
             return false;
+        }
         LambdaParser::TreeNode *use = nullptr;
         if (!LambdaParser::Use::TryCreate(input.substr(0, ind), use)) {
-            return false;
+            throw exception();
         }
         /// here ind should be \.
         int was = ind + 1;
         while (ind < size(input) && input[ind] != '.') ind++;
-        if(ind == size(input)) return false;
+        if (ind == size(input))
+            throw exception();
         LambdaParser::TreeNode *variable = nullptr;
         if (!LambdaParser::Variable::TryCreate(input.substr(was, ind - was), variable)) {
-            return false;
+            throw exception();
         }
         LambdaParser::TreeNode *expr = nullptr;
         if (!LambdaParser::Expression::TryCreate(input.substr(ind + 1), expr)) {
-            return false;
+            throw exception();
         }
         var = new Expression(dynamic_cast<LambdaParser::Use *>(use), dynamic_cast<LambdaParser::Variable *>(variable),
                              dynamic_cast<LambdaParser::Expression *>(expr));
@@ -253,6 +258,8 @@ LambdaParser::Expression *LambdaParser::Parse(std::string input) {
     trimSpaces(input);
     TreeNode *res = nullptr;
     Expression::TryCreate(input, res);
+//    if(!Expression::TryCreate(input, res))
+//        throw exception();
     return dynamic_cast<Expression *>(res);
 }
 
@@ -265,7 +272,7 @@ void LambdaParser::whitespaceToSpace(std::string &out) {
 }
 
 void LambdaParser::trimSpaces(std::string &out) {
-    if(out.empty()) return;
+    if (out.empty()) return;
     string res;
     res.push_back(out[0]);
     forn(i, 1, size(out))if (out[i] != ' ' || out[i] != res.back())

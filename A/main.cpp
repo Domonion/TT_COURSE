@@ -5,17 +5,21 @@
 #include "main.h"
 
 int main() {
-    //freopen("input.txt","r",stdin);
-    //freopen("output.txt","w",stdout);
+//    freopen("input.txt","r",stdin);
+//    freopen("output.txt","w",stdout);
     iostream::sync_with_stdio(false);
     cin.tie(nullptr);
     cout.tie(nullptr);
     string input;
-    getline(cin, input, '{');
+    string buffer;
+    while (cin >> buffer) {
+        input += buffer;
+        input += ' ';
+    }
     auto res = LambdaParser::Parse(input);
-    if(res != nullptr)
-        cout << res->ToString();
-    else
-        cout << "something went wrong!";
+    if(res == nullptr){
+        return 0;
+    }
+    cout << res->ToString();
     return 0;
 }
