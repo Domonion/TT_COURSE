@@ -34,7 +34,8 @@ LambdaParser::Variable *LambdaParser::Variable::CreateUnchecked(std::string inpu
 }
 
 bool LambdaParser::Variable::TryCreate(string_view input, TreeNode *&var) {
-    fora(i, input)if (!valid(i))
+    fora(i, input)
+        if (!valid(i))
             return false;
     string res;
     fora(i, input)res.push_back(i);
@@ -54,24 +55,12 @@ LambdaParser::Variable::~Variable() {}
 
 LambdaParser::Atom::Atom(LambdaParser::TreeNode *const _value) : value(_value) {}
 
-bool LambdaParser::Atom::TryCreate(string_view input_raw, LambdaParser::TreeNode *&var) {
+LambdaParser::Atom * LambdaParser::Atom::Create(string_view input_raw) {
     string_view input = trimSpaces(input_raw);
-    if (input.empty())
-        throw exception();
     if (input[0] == Util::OPEN && input.back() == Util::CLOSE) {
-        TreeNode *expr;
-        if (LambdaParser::Expression::TryCreate(input.substr(1, size(input) - 2), expr)) {
-            var = new Atom(expr);
-            return true;
-        }
-        throw exception();
+        return new Atom(LambdaParser::Expression::Create(input.substr(1, size(input) - 2)));
     }
-    TreeNode *variable;
-    if (LambdaParser::Variable::TryCreate(input, variable)) {
-        var = new Atom(variable);
-        return true;
-    }
-    throw exception();
+    return new Atom(LambdaParser::Variable::CreateUnchecked(input));
 }
 
 bool LambdaParser::Atom::IsVariable() const {
@@ -98,7 +87,7 @@ LambdaParser::Atom::~Atom() {
 
 LambdaParser::Use::Use(LambdaParser::Atom *const _value, LambdaParser::Use *const _next) : value(_value), next(_next) {}
 
-bool LambdaParser::Use::TryCreate(string_view input_raw, TreeNode *&var) {
+LambdaParser::Use* LambdaParser::Use::Create(string_view input_raw) {
     string_view input = trimSpaces(input_raw);
     if (input.empty())
         throw exception();
@@ -143,9 +132,8 @@ bool LambdaParser::Use::TryCreate(string_view input_raw, TreeNode *&var) {
             last = new Use(i, last);
         }
         var = last;
-    } else{
-        fora(i, atoms)
-            delete i;
+    } else {
+        fora(i, atoms)delete i;
     }
     return res;
 }
@@ -178,35 +166,20 @@ LambdaParser::Use::~Use() {
 LambdaParser::Expression::Expression(LambdaParser::Use *use, LambdaParser::Variable *var, LambdaParser::Expression *exp)
         : usage(use), variable(var), expr(exp) {}
 
-bool LambdaParser::Expression::TryCreate(string_view input_raw, TreeNode *&var) {
+LambdaParser::Expression* LambdaParser::Expression::Create(string_view input_raw) {
     string_view input = trimSpaces(input_raw);
-    if (input.empty())
-        throw exception();
     if (LambdaParser::Use::TryCreate(input, var)) {
-        var = new Expression(dynamic_cast<Use *>(var), nullptr, nullptr);
-        return true;
+        return new Expression(Use::Create(input), nullptr, nullptr);
     } else if (input[0] == '\\') {
         int ind = 0;
-        while (ind < size(input) && input[ind] != '.') ind++;
-        if (ind == size(input))
-            throw exception();
-        LambdaParser::TreeNode *variable = nullptr;
-        if (!LambdaParser::Variable::TryCreate(input.substr(1, ind - 1), variable)) {
-            throw exception();
-        }
-        LambdaParser::TreeNode *expr = nullptr;
-        if (!LambdaParser::Expression::TryCreate(input.substr(ind + 1), expr)) {
-            throw exception();
-        }
-        var = new Expression(nullptr, dynamic_cast<LambdaParser::Variable *>(variable),
-                             dynamic_cast<LambdaParser::Expression *>(expr));
-        return true;
-        ///expression without use
+        while (input[ind] != '.') ind++;
+        return new Expression(nullptr, LambdaParser::Variable::CreateUnchecked(input.substr(1, ind - 1)), LambdaParser::Expression::Create(input.substr(ind + 1)));
     } else {
         ///expression with use
         int ind = findCharWithBalance(input, '\\');
         if (ind == -1) {
-            fora(i, input)if (i == '\\')
+            fora(i, input)
+                if (i == '\\')
                     throw exception();
             return false;
         }
@@ -234,6 +207,7 @@ bool LambdaParser::Expression::TryCreate(string_view input_raw, TreeNode *&var) 
 }
 
 std::string LambdaParser::Expression::ToString() const {
+    //todo tostring maybe very very long
     if (IsUsage()) {
         return usage->ToString();
     } else {
@@ -268,13 +242,11 @@ LambdaParser::Expression::~Expression() {
     delete expr;
 }
 
-LambdaParser::Expression *LambdaParser::Parse(std::string& input) {
+LambdaParser::Expression *LambdaParser::Parse(std::string &input) {
     whitespaceToSpace(input);
     uniqueSpaces(input);
     string_view now = trimSpaces(input);
-    TreeNode *res = nullptr;
-    Expression::TryCreate(now, res);
-    return dynamic_cast<Expression *>(res);
+    return Expression::Create(now);;
 }
 
 void LambdaParser::whitespaceToSpace(std::string &out) {
@@ -302,7 +274,6 @@ std::string_view LambdaParser::trimSpaces(std::string_view const &input) {
 }
 
 void LambdaParser::uniqueSpaces(std::string &out) {
-    if (out.empty()) return;
     int now = 0;
     forn(i, 1, size(out)) {
         if (out[i] != ' ' || out[i] != out[now]) {

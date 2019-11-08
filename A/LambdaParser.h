@@ -43,7 +43,7 @@ public:
 
     public:
 
-        static bool TryCreate(std::string_view input, TreeNode *&var);
+        static Atom* Create(std::string_view input);
 
         bool IsVariable() const;
 
@@ -63,7 +63,7 @@ public:
 
     public:
 
-        static bool TryCreate(std::string_view input, TreeNode *&var);
+        static Use* Create(std::string_view input);
 
         std::string ToString() const;
 
@@ -86,7 +86,7 @@ public:
 
     public:
 
-        static bool TryCreate(std::string_view input, TreeNode *&var);
+        static Expression * Create(std::string_view input);
 
         std::string ToString() const;
 
