@@ -7,7 +7,6 @@
 #include "main.h"
 
 int findCharWithBalance(string const &input, char c, int balance = 0, int startInd = 0, int endInd = 2000000000) {
-    //todo empty range etc
     int now_balance = 0;
     endInd = min(endInd, size(input));
     forn(i, startInd, endInd) {
@@ -24,13 +23,13 @@ int findCharWithBalance(string const &input, char c, int balance = 0, int startI
 
 LambdaParser::TreeNode::~TreeNode() {}
 
-LambdaParser::Variable::Variable(std::string const &_name) : name(_name) {}
+LambdaParser::Variable::Variable(std::string const _name) : name(_name) {}
 
-LambdaParser::Variable *LambdaParser::Variable::CreateUnchecked(std::string const &input) {
+LambdaParser::Variable *LambdaParser::Variable::CreateUnchecked(std::string input) {
     return new Variable(input);
 }
 
-bool LambdaParser::Variable::TryCreate(std::string const &input, LambdaParser::TreeNode *&var) {
+bool LambdaParser::Variable::TryCreate(std::string input, LambdaParser::TreeNode *&var) {
     if (regex_match(input, Util::VARIABLE_REGEX)) {//TODO may be regex problems
         var = new Variable(input);
         return true;
@@ -38,7 +37,7 @@ bool LambdaParser::Variable::TryCreate(std::string const &input, LambdaParser::T
     return false;
 }
 
-std::string const &LambdaParser::Variable::GetName() const {
+std::string LambdaParser::Variable::GetName() const {
     return name;
 }
 
@@ -50,13 +49,12 @@ LambdaParser::Variable::~Variable() {}
 
 LambdaParser::Atom::Atom(LambdaParser::TreeNode *const _value) : value(_value) {}
 
-bool LambdaParser::Atom::TryCreate(std::string const &input, LambdaParser::TreeNode *&var) {//TODO may be spaces problem
-    //todo what if empty
+bool LambdaParser::Atom::TryCreate(std::string input, LambdaParser::TreeNode *&var) {
+    trimSpaces(input);
+    if(input.empty()) return false;
     if (input[0] == Util::OPEN && input.back() == Util::CLOSE) {
         TreeNode *expr;
-        string buffer = input.substr(1, size(input) - 2);
-        trimSpaces(buffer);
-        if (LambdaParser::Expression::TryCreate(buffer, expr)) {
+        if (LambdaParser::Expression::TryCreate(input.substr(1, size(input) - 2), expr)) {
             var = new Atom(expr);
             return true;
         }
@@ -92,9 +90,10 @@ LambdaParser::Atom::~Atom() {}
 
 LambdaParser::Use::Use(LambdaParser::Atom *const _value, LambdaParser::Use *const _next) : value(_value), next(_next) {}
 
-bool LambdaParser::Use::TryCreate(std::string const &input, LambdaParser::TreeNode *&var) {
-    //todo may be problem with spaces
+bool LambdaParser::Use::TryCreate(std::string input, LambdaParser::TreeNode *&var) {
     //todo what if out of range everywhere
+    trimSpaces(input);
+    if(input.empty()) return false;
     int ind = 0;
     bool res = false;
     vec<Atom *> atoms;
@@ -169,17 +168,17 @@ LambdaParser::Use::~Use() {}
 LambdaParser::Expression::Expression(LambdaParser::Use *use, LambdaParser::Variable *var, LambdaParser::Expression *exp)
         : usage(use), variable(var), expr(exp) {}
 
-bool LambdaParser::Expression::TryCreate(std::string const &input, LambdaParser::TreeNode *&var) {
+bool LambdaParser::Expression::TryCreate(std::string input, LambdaParser::TreeNode *&var) {
+    trimSpaces(input);
+    if(input.empty()) return false;
     if (LambdaParser::Use::TryCreate(input, var)) {
         var = new Expression(dynamic_cast<Use *>(var), nullptr, nullptr);
         ///expression is plain use
         return true;
-        //todo spaces problems
-        //todo what if string empty
     } else if (input[0] == '\\') {
         int ind = 0;
-        //todo there could be no . and we lost
-        while (input[++ind] != '.');
+        while (ind < size(input) && input[ind] != '.') ind++;
+        if(ind == size(input)) return false;
         LambdaParser::TreeNode *variable = nullptr;
         if (!LambdaParser::Variable::TryCreate(input.substr(1, ind - 1), variable)) {
             return false;
@@ -195,7 +194,6 @@ bool LambdaParser::Expression::TryCreate(std::string const &input, LambdaParser:
     } else {
         ///expression with use
         int ind = findCharWithBalance(input, '\\');
-        //todo what if string empty
         if (ind == -1)
             return false;
         LambdaParser::TreeNode *use = nullptr;
@@ -204,8 +202,8 @@ bool LambdaParser::Expression::TryCreate(std::string const &input, LambdaParser:
         }
         /// here ind should be \.
         int was = ind + 1;
-        while (input[++ind] != '.');
-        //todo there could be no . and we lost
+        while (ind < size(input) && input[ind] != '.') ind++;
+        if(ind == size(input)) return false;
         LambdaParser::TreeNode *variable = nullptr;
         if (!LambdaParser::Variable::TryCreate(input.substr(was, ind - was), variable)) {
             return false;
@@ -268,10 +266,10 @@ void LambdaParser::whitespaceToSpace(std::string &out) {
 }
 
 void LambdaParser::trimSpaces(std::string &out) {
+    if(out.empty()) return;
     string res;
     res.push_back(out[0]);
-    forn(i, 1, size(out))
-        if (out[i] != ' ' || out[i] != out[i - 1])
+    forn(i, 1, size(out))if (out[i] != ' ' || out[i] != res.back())
             res.push_back(out[i]);
     out = res;
     int len = 0;

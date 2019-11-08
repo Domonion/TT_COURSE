@@ -20,14 +20,14 @@ public:
     private:
         std::string const name;
 
-        Variable(std::string const &_name);
+        Variable(std::string _name);
 
     public:
-        static Variable *CreateUnchecked(std::string const &input);
+        static Variable *CreateUnchecked(std::string input);
 
-        static bool TryCreate(std::string const &input, TreeNode *&var);
+        static bool TryCreate(std::string input, TreeNode *&var);
 
-        std::string const &GetName() const;
+        std::string GetName() const;
 
         std::string ToString() const;
 
@@ -42,7 +42,7 @@ public:
 
     public:
 
-        static bool TryCreate(std::string const &input, TreeNode *&var);
+        static bool TryCreate(std::string input, TreeNode *&var);
 
         bool IsVariable() const;
 
@@ -62,7 +62,7 @@ public:
 
     public:
 
-        static bool TryCreate(std::string const &input, TreeNode *&var);
+        static bool TryCreate(std::string input, TreeNode *&var);
 
         std::string ToString() const;
 
@@ -85,7 +85,7 @@ public:
 
     public:
 
-        static bool TryCreate(std::string const &input, TreeNode *&var);
+        static bool TryCreate(std::string input, TreeNode *&var);
 
         std::string ToString() const;
 
