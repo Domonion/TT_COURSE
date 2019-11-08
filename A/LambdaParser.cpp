@@ -92,7 +92,9 @@ LambdaParser::TreeNode *LambdaParser::Atom::GetValue() const {
     return value;
 }
 
-LambdaParser::Atom::~Atom() {}
+LambdaParser::Atom::~Atom() {
+    delete value;
+}
 
 LambdaParser::Use::Use(LambdaParser::Atom *const _value, LambdaParser::Use *const _next) : value(_value), next(_next) {}
 
@@ -129,7 +131,8 @@ bool LambdaParser::Use::TryCreate(string_view input_raw, TreeNode *&var) {
                 throw exception();
             }
         } else if (input[ind] == '\\' || input[ind] == '.') {
-            return false;
+            ind = 0;
+            break;
         }
         ind++;
     }
@@ -140,6 +143,9 @@ bool LambdaParser::Use::TryCreate(string_view input_raw, TreeNode *&var) {
             last = new Use(i, last);
         }
         var = last;
+    } else{
+        fora(i, atoms)
+            delete i;
     }
     return res;
 }
@@ -164,7 +170,10 @@ LambdaParser::Use *LambdaParser::Use::GetNext() const {
     return next;
 }
 
-LambdaParser::Use::~Use() {}
+LambdaParser::Use::~Use() {
+    delete value;
+    delete next;
+}
 
 LambdaParser::Expression::Expression(LambdaParser::Use *use, LambdaParser::Variable *var, LambdaParser::Expression *exp)
         : usage(use), variable(var), expr(exp) {}
@@ -253,9 +262,13 @@ bool LambdaParser::Expression::IsClosed() const {
     return !IsUsage() && usage == nullptr;
 }
 
-LambdaParser::Expression::~Expression() {}
+LambdaParser::Expression::~Expression() {
+    delete usage;
+    delete variable;
+    delete expr;
+}
 
-LambdaParser::Expression *LambdaParser::Parse(std::string input) {
+LambdaParser::Expression *LambdaParser::Parse(std::string& input) {
     whitespaceToSpace(input);
     uniqueSpaces(input);
     string_view now = trimSpaces(input);

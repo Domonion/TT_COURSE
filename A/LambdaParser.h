@@ -103,7 +103,7 @@ public:
         ~Expression();
     };
 
-    static Expression *Parse(std::string input);
+    static Expression *Parse(std::string& input);
 
 private:
     static void whitespaceToSpace(std::string &out);
