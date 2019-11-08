@@ -17,9 +17,6 @@ int main() {
         input += ' ';
     }
     auto res = LambdaParser::Parse(input);
-    if(res == nullptr){
-        return 0;
-    }
     cout << res->ToString();
     return 0;
 }

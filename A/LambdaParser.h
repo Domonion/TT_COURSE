@@ -3,6 +3,7 @@
 //
 #include <string>
 #include <exception>
+#include <string_view>
 
 #ifndef A_LAMBDAPARSER_H
 #define A_LAMBDAPARSER_H
@@ -25,7 +26,7 @@ public:
     public:
         static Variable *CreateUnchecked(std::string input);
 
-        static bool TryCreate(std::string input, TreeNode *&var);
+        static bool TryCreate(std::string_view input, TreeNode *&var);
 
         std::string GetName() const;
 
@@ -42,7 +43,7 @@ public:
 
     public:
 
-        static bool TryCreate(std::string input, TreeNode *&var);
+        static bool TryCreate(std::string_view input, TreeNode *&var);
 
         bool IsVariable() const;
 
@@ -62,7 +63,7 @@ public:
 
     public:
 
-        static bool TryCreate(std::string input, TreeNode *&var);
+        static bool TryCreate(std::string_view input, TreeNode *&var);
 
         std::string ToString() const;
 
@@ -85,7 +86,7 @@ public:
 
     public:
 
-        static bool TryCreate(std::string input, TreeNode *&var);
+        static bool TryCreate(std::string_view input, TreeNode *&var);
 
         std::string ToString() const;
 
@@ -107,7 +108,11 @@ public:
 private:
     static void whitespaceToSpace(std::string &out);
 
-    static void trimSpaces(std::string &out);
+    static std::string_view trimSpaces(std::string const &out);
+
+    static std::string_view trimSpaces(std::string_view const & out);
+
+    static void uniqueSpaces(std::string &out);
 };
 
 

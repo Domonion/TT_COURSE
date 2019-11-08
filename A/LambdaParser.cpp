@@ -10,7 +10,7 @@ bool valid(char c) {
     return c != '.' && c != '\\' && c != ' ' && c != '(' && c != ')';
 }
 
-int findCharWithBalance(string const &input, char c, int balance = 0, int startInd = 0, int endInd = 2000000000) {
+int findCharWithBalance(string_view const &input, char c, int balance = 0, int startInd = 0, int endInd = 2000000000) {
     int now_balance = 0;
     endInd = min(endInd, size(input));
     forn(i, startInd, endInd) {
@@ -33,10 +33,12 @@ LambdaParser::Variable *LambdaParser::Variable::CreateUnchecked(std::string inpu
     return new Variable(input);
 }
 
-bool LambdaParser::Variable::TryCreate(std::string input, LambdaParser::TreeNode *&var) {
+bool LambdaParser::Variable::TryCreate(string_view input, TreeNode *&var) {
     fora(i, input)if (!valid(i))
             return false;
-    var = new Variable(input);
+    string res;
+    fora(i, input)res.push_back(i);
+    var = new Variable(res);
     return true;
 }
 
@@ -52,8 +54,8 @@ LambdaParser::Variable::~Variable() {}
 
 LambdaParser::Atom::Atom(LambdaParser::TreeNode *const _value) : value(_value) {}
 
-bool LambdaParser::Atom::TryCreate(std::string input, LambdaParser::TreeNode *&var) {
-    trimSpaces(input);
+bool LambdaParser::Atom::TryCreate(string_view input_raw, LambdaParser::TreeNode *&var) {
+    string_view input = trimSpaces(input_raw);
     if (input.empty())
         throw exception();
     if (input[0] == Util::OPEN && input.back() == Util::CLOSE) {
@@ -94,8 +96,8 @@ LambdaParser::Atom::~Atom() {}
 
 LambdaParser::Use::Use(LambdaParser::Atom *const _value, LambdaParser::Use *const _next) : value(_value), next(_next) {}
 
-bool LambdaParser::Use::TryCreate(std::string input, LambdaParser::TreeNode *&var) {//TODO shit there shit happens
-    trimSpaces(input);
+bool LambdaParser::Use::TryCreate(string_view input_raw, TreeNode *&var) {
+    string_view input = trimSpaces(input_raw);
     if (input.empty())
         throw exception();
     int ind = 0;
@@ -167,8 +169,8 @@ LambdaParser::Use::~Use() {}
 LambdaParser::Expression::Expression(LambdaParser::Use *use, LambdaParser::Variable *var, LambdaParser::Expression *exp)
         : usage(use), variable(var), expr(exp) {}
 
-bool LambdaParser::Expression::TryCreate(std::string input, LambdaParser::TreeNode *&var) {
-    trimSpaces(input);
+bool LambdaParser::Expression::TryCreate(string_view input_raw, TreeNode *&var) {
+    string_view input = trimSpaces(input_raw);
     if (input.empty())
         throw exception();
     if (LambdaParser::Use::TryCreate(input, var)) {
@@ -255,11 +257,10 @@ LambdaParser::Expression::~Expression() {}
 
 LambdaParser::Expression *LambdaParser::Parse(std::string input) {
     whitespaceToSpace(input);
-    trimSpaces(input);
+    uniqueSpaces(input);
+    string_view now = trimSpaces(input);
     TreeNode *res = nullptr;
-    Expression::TryCreate(input, res);
-//    if(!Expression::TryCreate(input, res))
-//        throw exception();
+    Expression::TryCreate(now, res);
     return dynamic_cast<Expression *>(res);
 }
 
@@ -271,15 +272,29 @@ void LambdaParser::whitespaceToSpace(std::string &out) {
     }
 }
 
-void LambdaParser::trimSpaces(std::string &out) {
-    if (out.empty()) return;
-    string res;
-    res.push_back(out[0]);
-    forn(i, 1, size(out))if (out[i] != ' ' || out[i] != res.back())
-            res.push_back(out[i]);
-    out = res;
+string_view LambdaParser::trimSpaces(string const &input) {
+    string_view res(input.c_str(), size(input));
+    return trimSpaces(res);
+}
+
+std::string_view LambdaParser::trimSpaces(std::string_view const &input) {
+    string_view res(input);
     int len = 0;
-    while (len < size(out) && out[len] == ' ') ++len;
-    out.erase(0, len);
-    while (!out.empty() && out.back() == ' ') out.pop_back();
+    while (len < size(res) && res[len] == ' ') ++len;
+    res.remove_prefix(len);
+    len = 0;
+    while (len < size(res) && res[size(res) - len - 1] == ' ') len++;
+    res.remove_suffix(len);
+    return res;
+}
+
+void LambdaParser::uniqueSpaces(std::string &out) {
+    if (out.empty()) return;
+    int now = 0;
+    forn(i, 1, size(out)) {
+        if (out[i] != ' ' || out[i] != out[now]) {
+            out[++now] = out[i];
+        }
+    }
+    out.resize(now + 1);
 }
