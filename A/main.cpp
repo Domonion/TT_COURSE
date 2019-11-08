@@ -14,6 +14,7 @@ int main() {
     string buffer;
     while (cin >> buffer) {
         input += buffer;
+        //TODO that is very very long(
         input += ' ';
     }
     auto res = LambdaParser::Parse(input);
