@@ -12,6 +12,10 @@ int main() {
     cout.tie(nullptr);
     string input;
     getline(cin, input, '{');
-    cout << LambdaParser::Parse(input)->ToString();
+    auto res = LambdaParser::Parse(input);
+    if(res != nullptr)
+        cout << res->ToString();
+    else
+        cout << "something went wrong!";
     return 0;
 }

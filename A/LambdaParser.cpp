@@ -30,7 +30,7 @@ LambdaParser::Variable *LambdaParser::Variable::CreateUnchecked(std::string inpu
 }
 
 bool LambdaParser::Variable::TryCreate(std::string input, LambdaParser::TreeNode *&var) {
-    if (regex_match(input, Util::VARIABLE_REGEX)) {//TODO may be regex problems
+    if (regex_match(input, Util::VARIABLE_REGEX)) {
         var = new Variable(input);
         return true;
     }
@@ -91,7 +91,6 @@ LambdaParser::Atom::~Atom() {}
 LambdaParser::Use::Use(LambdaParser::Atom *const _value, LambdaParser::Use *const _next) : value(_value), next(_next) {}
 
 bool LambdaParser::Use::TryCreate(std::string input, LambdaParser::TreeNode *&var) {
-    //todo what if out of range everywhere
     trimSpaces(input);
     if(input.empty()) return false;
     int ind = 0;
@@ -106,9 +105,11 @@ bool LambdaParser::Use::TryCreate(std::string input, LambdaParser::TreeNode *&va
                     atoms.push_back(dynamic_cast<Atom *>(atom));
                     ind = next;
                 } else {
+                    ind = 0;
                     break;
                 }
             } else {
+                ind = 0;
                 break;
             }
         } else if ('a' <= input[ind] && input[ind] <= 'z') {
@@ -118,21 +119,19 @@ bool LambdaParser::Use::TryCreate(std::string input, LambdaParser::TreeNode *&va
                    (('a' <= input[ind] && input[ind] <= 'z') || ('0' <= input[ind] && input[ind] <= '9') ||
                     input.substr(ind, 1) == string("\u2019")))
                 ind++;
-            //TODO here ind may be greate that size and we got ok even if we should not
             LambdaParser::TreeNode *atom;
             if (LambdaParser::Atom::TryCreate(input.substr(was, ind - was), atom)) {
                 atoms.push_back(dynamic_cast<Atom *>(atom));
+                ind--;
             } else {
+                ind = 0;
                 break;
             }
-            //TODO ind may be out of range
-            if (input[ind] != ' ') ind--;
         } else if (input[ind] != ' ')
             return false;
         ind++;
     }
-    if (ind >= size(input)) {
-        //todo what if atoms clear
+    if (ind >= size(input) && size(atoms) > 0) {
         res = true;
         LambdaParser::Use *last = nullptr;
         fora(i, atoms) {
