@@ -27,24 +27,24 @@ int findCharWithBalance(string_view const &input, char c, int balance = 0, int s
 
 LambdaParser::TreeNode::~TreeNode() {}
 
-LambdaParser::Variable::Variable(std::string const _name) : name(_name) {}
+LambdaParser::Variable::Variable(std::string_view const _name) : name(_name) {}
 
-LambdaParser::Variable *LambdaParser::Variable::CreateUnchecked(std::string input) {
+LambdaParser::Variable *LambdaParser::Variable::CreateUnchecked(std::string_view input) {
     return new Variable(input);
 }
 
-bool LambdaParser::Variable::TryCreate(string_view input, TreeNode *&var) {
-    fora(i, input)
-        if (!valid(i))
-            return false;
-    string res;
-    fora(i, input)res.push_back(i);
-    var = new Variable(res);
-    return true;
+LambdaParser::Variable *LambdaParser::Variable::CreateChecked(string_view input_raw) {
+    string_view input = trimSpaces(input_raw);
+    fora(i, input)if (!valid(i))
+            throw exception();
+    return CreateUnchecked(input);
 }
 
 std::string LambdaParser::Variable::GetName() const {
-    return name;
+    string now;
+    now.reserve(size(name));
+    fora(i, name)now.push_back(i);
+    return now;
 }
 
 std::string LambdaParser::Variable::ToString() const {
@@ -60,7 +60,7 @@ LambdaParser::Atom *LambdaParser::Atom::Create(string_view input_raw) {
     if (input[0] == Util::OPEN && input.back() == Util::CLOSE) {
         return new Atom(LambdaParser::Expression::Create(input.substr(1, size(input) - 2)));
     }
-    return new Atom(LambdaParser::Variable::CreateUnchecked(input));
+    return new Atom(LambdaParser::Variable::CreateChecked(input));
 }
 
 bool LambdaParser::Atom::IsVariable() const {
@@ -142,33 +142,27 @@ LambdaParser::Expression::Expression(LambdaParser::Use *use, LambdaParser::Varia
 
 LambdaParser::Expression *LambdaParser::Expression::Create(string_view input_raw) {
     string_view input = trimSpaces(input_raw);
-    bool kek = true;
-    fora(i, input_raw)if (i == '\\' || i == '.') {
-            kek = false;
-            break;
-        }
+    bool kek = findCharWithBalance(input, '.') == -1 && findCharWithBalance(input, '\\') == -1;
     if (kek) {
         return new Expression(Use::Create(input), nullptr, nullptr);
     } else if (input[0] == '\\') {
         int ind = 0;
         while (input[ind] != '.') ind++;
-        return new Expression(nullptr, LambdaParser::Variable::CreateUnchecked(input.substr(1, ind - 1)),
+        return new Expression(nullptr, LambdaParser::Variable::CreateChecked(input.substr(1, ind - 1)),
                               LambdaParser::Expression::Create(input.substr(ind + 1)));
     } else {
         ///expression with use
         int ind = findCharWithBalance(input, '\\');
+        //TODO this can not work!
         if (ind == -1) {
-            fora(i, input)
-                if (i == '\\')
-                    throw exception();
-            return false;
+            throw exception();
         }
         LambdaParser::Use *use = LambdaParser::Use::Create(input.substr(0, ind));
         /// here ind should be \.
         int was = ind + 1;
         while (input[ind] != '.') ind++;
         return new Expression(dynamic_cast<LambdaParser::Use *>(use),
-                              LambdaParser::Variable::CreateUnchecked(input.substr(was, ind - was)),
+                              LambdaParser::Variable::CreateChecked(input.substr(was, ind - was)),
                               LambdaParser::Expression::Create(input.substr(ind + 1)));
     }
 }

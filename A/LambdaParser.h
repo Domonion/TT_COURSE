@@ -19,14 +19,14 @@ public:
 
     struct Variable : public TreeNode {
     private:
-        std::string const name;
+        std::string_view const name;
 
-        Variable(std::string _name);
+        Variable(std::string_view _name);
 
     public:
-        static Variable *CreateUnchecked(std::string input);
+        static Variable *CreateUnchecked(std::string_view input);
 
-        static bool TryCreate(std::string_view input, TreeNode *&var);
+        static Variable* CreateChecked(std::string_view input);
 
         std::string GetName() const;
 
@@ -106,6 +106,7 @@ public:
     static Expression *Parse(std::string& input);
 
 private:
+
     static void whitespaceToSpace(std::string &out);
 
     static std::string_view trimSpaces(std::string const &out);
