@@ -4,6 +4,7 @@
 #include <string>
 #include <exception>
 #include <string_view>
+#include <vector>
 
 #ifndef A_LAMBDAPARSER_H
 #define A_LAMBDAPARSER_H
@@ -12,6 +13,7 @@ struct LambdaParser {
 public:
     struct TreeNode {
     public:
+
         virtual std::string ToString() const = 0;
 
         virtual ~TreeNode() = 0;
@@ -19,16 +21,14 @@ public:
 
     struct Variable : public TreeNode {
     private:
-        std::string_view const name;
 
         Variable(std::string_view _name);
 
     public:
+
         static Variable *CreateUnchecked(std::string_view input);
 
-        static Variable* CreateChecked(std::string_view input);
-
-        std::string GetName() const;
+        std::string_view const name;
 
         std::string ToString() const;
 
@@ -37,64 +37,70 @@ public:
 
     struct Atom : public TreeNode {
     private:
-        TreeNode *const value;
 
-        Atom(TreeNode *const _value);
+        Atom(TreeNode *_value);
+
+        TreeNode *value;
 
     public:
 
-        static Atom* Create(std::string_view input);
+        static Atom *Create(std::string_view input);
+
+        TreeNode *Get();
+
+        void Set(TreeNode *_value);
 
         bool IsVariable() const;
 
         std::string ToString() const;
-
-        TreeNode *GetValue() const;
 
         ~Atom();
     };
 
     struct Use : public TreeNode {
     private:
-        Atom *const value;
-        Use *const next;
 
-        Use(Atom *const _value, Use *const _next);
+        std::vector<Atom *> atoms;
+
+        Use();
 
     public:
 
-        static Use* Create(std::string_view input);
+        static Use *Create(std::string_view input);
 
         std::string ToString() const;
 
-        Atom *GetValue() const;
-
-        bool IsLast() const;
-
-        Use *GetNext() const;
+        std::vector<Atom *> &GetAtoms();
 
         ~Use();
     };
 
     struct Expression : public TreeNode {
     private:
-        Use *const usage;
-        Variable *const variable;
-        Expression *const expr;
+
+        Use *usage;
+        Variable *variable;
+        Expression *expr;
 
         Expression(Use *use, Variable *var, Expression *exp);
 
     public:
 
-        static Expression * Create(std::string_view input);
+        static Expression *Create(std::string_view input);
 
         std::string ToString() const;
 
         Use *GetUsage() const;
 
+        void SetUsage(Use *_usage);
+
         Variable *GetVariable() const;
 
+        void SetVariable(Variable *_variable);
+
         Expression *GetExpression() const;
+
+        void SetExpression(Expression *_expr);
 
         bool IsUsage() const;
 
@@ -103,17 +109,7 @@ public:
         ~Expression();
     };
 
-    static Expression *Parse(std::string& input);
-
-private:
-
-    static void whitespaceToSpace(std::string &out);
-
-    static std::string_view trimSpaces(std::string const &out);
-
-    static std::string_view trimSpaces(std::string_view const & out);
-
-    static void uniqueSpaces(std::string &out);
+    static Expression *Parse(std::string &input);
 };
 
 
