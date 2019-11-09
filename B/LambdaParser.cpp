@@ -3,7 +3,6 @@
 //
 
 #include "LambdaParser.h"
-#include "Util.h"
 #include "main.h"
 
 bool valid(char c) {
@@ -14,9 +13,9 @@ int findCharWithBalance(string_view const &input, char c, int balance = 0, int s
     int now_balance = 0;
     endInd = min(endInd, size(input));
     forn(i, startInd, endInd) {
-        if (input[i] == Util::CLOSE) {
+        if (input[i] == '(') {
             --now_balance;
-        } else if (input[i] == Util::OPEN) {
+        } else if (input[i] == ')') {
             ++now_balance;
         }
         if (now_balance == balance && input[i] == c)
@@ -79,15 +78,15 @@ std::string LambdaParser::Variable::ToString() const {
 
 LambdaParser::Variable::~Variable() {}
 
-bool LambdaParser::Variable::Reduct() {
-    return false;
-}
+//bool LambdaParser::Variable::Reduct() {
+//    return false;
+//}
 
 LambdaParser::Atom::Atom(LambdaParser::TreeNode *const _value) : value(_value) {}
 
 LambdaParser::Atom *LambdaParser::Atom::Create(string_view input_raw) {
     string_view input = trimSpaces(input_raw);
-    if (input[0] == Util::OPEN && input.back() == Util::CLOSE) {
+    if (input[0] == '(' && input.back() == ')') {
         return new Atom(LambdaParser::Expression::Create(input.substr(1, size(input) - 2)));
     }
     return new Atom(LambdaParser::Variable::CreateUnchecked(input));
@@ -111,17 +110,9 @@ LambdaParser::Atom::~Atom() {
     delete value;
 }
 
-LambdaParser::TreeNode *LambdaParser::Atom::Get() {
-    return value;
-}
-
-void LambdaParser::Atom::Set(LambdaParser::TreeNode *_value) {
-    value = _value;
-}
-
-bool LambdaParser::Atom::Reduct() {
-    return value->Reduct();
-}
+//bool LambdaParser::Atom::Reduct() {
+//    return value->Reduct();
+//}
 
 LambdaParser::Use::Use() {}
 
@@ -130,8 +121,8 @@ LambdaParser::Use *LambdaParser::Use::Create(string_view input_raw) {
     int ind = 0;
     LambdaParser::Use *last = new Use();
     while (ind < size(input)) {
-        if (input[ind] == Util::OPEN) {
-            int next = findCharWithBalance(input, Util::CLOSE, 0, ind);
+        if (input[ind] == '(') {
+            int next = findCharWithBalance(input, ')', 0, ind);
             last->atoms.push_back(LambdaParser::Atom::Create(input.substr(ind, next - ind + 1)));
             ind = next;
         } else if ('a' <= input[ind] && input[ind] <= 'z') {
@@ -154,7 +145,7 @@ std::string LambdaParser::Use::ToString() const {
         if (ind == 0)
             res = atoms[ind]->ToString();
         else {
-            res = Util::OPEN + res + " " + atoms[ind]->ToString() + Util::CLOSE;
+            res = '(' + res + " " + atoms[ind]->ToString() + ')';
         }
         ind++;
     }
@@ -163,10 +154,6 @@ std::string LambdaParser::Use::ToString() const {
 
 LambdaParser::Use::~Use() {
     fora(i, atoms)delete i;
-}
-
-vector<LambdaParser::Atom *> &LambdaParser::Use::GetAtoms() {
-    return atoms;
 }
 
 LambdaParser::Expression::Expression(LambdaParser::Use *use, LambdaParser::Variable *var, LambdaParser::Expression *exp)
@@ -203,18 +190,6 @@ std::string LambdaParser::Expression::ToString() const {
     }
 }
 
-LambdaParser::Use *LambdaParser::Expression::GetUsage() const {
-    return usage;
-}
-
-LambdaParser::Variable *LambdaParser::Expression::GetVariable() const {
-    return variable;
-}
-
-LambdaParser::Expression *LambdaParser::Expression::GetExpression() const {
-    return expr;
-}
-
 bool LambdaParser::Expression::IsUsage() const {
     return expr == nullptr;
 }
@@ -229,37 +204,25 @@ LambdaParser::Expression::~Expression() {
     delete expr;
 }
 
-void LambdaParser::Expression::SetUsage(LambdaParser::Use *_usage) {
-    usage = _usage;
-}
-
-void LambdaParser::Expression::SetVariable(LambdaParser::Variable *_variable) {
-    variable = _variable;
-}
-
-void LambdaParser::Expression::SetExpression(LambdaParser::Expression *_expr) {
-    expr = _expr;
-}
-
-bool LambdaParser::Expression::Reduct() {
-    if (IsUsage()) {
-        return usage->Reduct();
-    } else {
-        if (IsClosed()) {
-            return expr->Reduct();
-        } else {
-            if (usage->Reduct()) {
-                return true;
-            } else {
-                Atom *last = usage->GetAtoms().back();
-                if (!last->IsVariable()) {
-                    REDUCTION;
-                }
-                return expr->Reduct();
-            }
-        }
-    }
-}
+//bool LambdaParser::Expression::Reduct() {
+//    if (IsUsage()) {
+//        return usage->Reduct();
+//    } else {
+//        if (IsClosed()) {
+//            return expr->Reduct();
+//        } else {
+//            if (usage->Reduct()) {
+//                return true;
+//            } else {
+//                Atom *last = usage->GetAtoms().back();
+//                if (!last->IsVariable()) {
+//                    REDUCTION;
+//                }
+//                return expr->Reduct();
+//            }
+//        }
+//    }
+//}
 
 LambdaParser::Expression *LambdaParser::Parse(std::string &input) {
     whitespaceToSpace(input);

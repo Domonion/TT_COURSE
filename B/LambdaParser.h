@@ -11,10 +11,11 @@
 
 struct LambdaParser {
 public:
+
     struct TreeNode {
     public:
 
-        virtual bool Reduct() = 0;
+//        virtual bool Reduct() = 0;
 
         virtual std::string ToString() const = 0;
 
@@ -22,13 +23,11 @@ public:
     };
 
     struct Variable : public TreeNode {
-    private:
+    public:
 
         Variable(std::string_view _name);
 
-    public:
-
-        bool Reduct();
+//        bool Reduct();
 
         static Variable *CreateUnchecked(std::string_view input);
 
@@ -40,21 +39,15 @@ public:
     };
 
     struct Atom : public TreeNode {
-    private:
+    public:
 
         Atom(TreeNode *_value);
 
         TreeNode *value;
 
-    public:
-
-        bool Reduct();
+//        bool Reduct();
 
         static Atom *Create(std::string_view input);
-
-        TreeNode *Get();
-
-        void Set(TreeNode *_value);
 
         bool IsVariable() const;
 
@@ -64,53 +57,35 @@ public:
     };
 
     struct Use : public TreeNode {
-    private:
+    public:
 
         std::vector<Atom *> atoms;
 
         Use();
 
-    public:
-
-        bool Reduct();
+//        bool Reduct();
 
         static Use *Create(std::string_view input);
 
         std::string ToString() const;
 
-        std::vector<Atom *> &GetAtoms();
-
         ~Use();
     };
 
     struct Expression : public TreeNode {
-    private:
+    public:
 
         Use *usage;
-        Variable *variable;
+        TreeNode *variable;
         Expression *expr;
 
         Expression(Use *use, Variable *var, Expression *exp);
 
-    public:
-
-        bool Reduct();
+//        bool Reduct();
 
         static Expression *Create(std::string_view input);
 
         std::string ToString() const;
-
-        Use *GetUsage() const;
-
-        void SetUsage(Use *_usage);
-
-        Variable *GetVariable() const;
-
-        void SetVariable(Variable *_variable);
-
-        Expression *GetExpression() const;
-
-        void SetExpression(Expression *_expr);
 
         bool IsUsage() const;
 
