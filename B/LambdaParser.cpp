@@ -5,6 +5,8 @@
 #include "LambdaParser.h"
 #include "main.h"
 
+map<string_view, LambdaParser::Variable *> mapper;
+
 bool valid(char c) {
     return c != '.' && c != '\\' && c != ' ' && c != '(' && c != ')';
 }
@@ -66,6 +68,9 @@ LambdaParser::Variable::Variable(std::string_view const _name) : name(_name) {}
 
 LambdaParser::Variable *LambdaParser::Variable::CreateUnchecked(std::string_view input_raw) {
     string_view input = trimSpaces(input_raw);
+    if(mapper.count(input)){
+        return mapper[input];
+    }
     return new Variable(input);
 }
 
@@ -167,16 +172,38 @@ LambdaParser::Expression *LambdaParser::Expression::Create(string_view input_raw
     } else if (input[0] == '\\') {
         int ind = 0;
         while (input[ind] != '.') ind++;
-        return new Expression(nullptr, LambdaParser::Variable::CreateUnchecked(input.substr(1, ind - 1)),
-                              LambdaParser::Expression::Create(input.substr(ind + 1)));
+        string_view var_s = input.substr(1, ind - 1);
+        Variable *var = LambdaParser::Variable::CreateUnchecked(var_s);
+        Variable *old = nullptr;
+        if (mapper.count(var_s)) {
+            old = mapper[var_s];
+        }
+        mapper[var_s] = var;
+        Expression *res = new Expression(nullptr, var,
+                                         LambdaParser::Expression::Create(input.substr(ind + 1)));
+        if (old != nullptr) {
+            mapper[var_s] = old;
+        }
+        return res;
     } else {
         int ind = findCharWithBalance(input, '\\');
         LambdaParser::Use *use = LambdaParser::Use::Create(input.substr(0, ind));
         int was = ind + 1;
         while (input[ind] != '.') ind++;
-        return new Expression(dynamic_cast<LambdaParser::Use *>(use),
-                              LambdaParser::Variable::CreateUnchecked(input.substr(was, ind - was)),
-                              LambdaParser::Expression::Create(input.substr(ind + 1)));
+        string_view var_s = input.substr(was, ind - was);
+        Variable *var = LambdaParser::Variable::CreateUnchecked(var_s);
+        Variable *old = nullptr;
+        if (mapper.count(var_s)) {
+            old = mapper[var_s];
+        }
+        mapper[var_s] = var;
+        Expression *res = new Expression(dynamic_cast<LambdaParser::Use *>(use),
+                                         var,
+                                         LambdaParser::Expression::Create(input.substr(ind + 1)));
+        if (old != nullptr) {
+            mapper[var_s] = old;
+        }
+        return res;
     }
 }
 
