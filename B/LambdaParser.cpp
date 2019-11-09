@@ -79,6 +79,10 @@ std::string LambdaParser::Variable::ToString() const {
 
 LambdaParser::Variable::~Variable() {}
 
+bool LambdaParser::Variable::Reduct() {
+    return false;
+}
+
 LambdaParser::Atom::Atom(LambdaParser::TreeNode *const _value) : value(_value) {}
 
 LambdaParser::Atom *LambdaParser::Atom::Create(string_view input_raw) {
@@ -113,6 +117,10 @@ LambdaParser::TreeNode *LambdaParser::Atom::Get() {
 
 void LambdaParser::Atom::Set(LambdaParser::TreeNode *_value) {
     value = _value;
+}
+
+bool LambdaParser::Atom::Reduct() {
+    return value->Reduct();
 }
 
 LambdaParser::Use::Use() {}
@@ -175,10 +183,8 @@ LambdaParser::Expression *LambdaParser::Expression::Create(string_view input_raw
         return new Expression(nullptr, LambdaParser::Variable::CreateUnchecked(input.substr(1, ind - 1)),
                               LambdaParser::Expression::Create(input.substr(ind + 1)));
     } else {
-        ///expression with use
         int ind = findCharWithBalance(input, '\\');
         LambdaParser::Use *use = LambdaParser::Use::Create(input.substr(0, ind));
-        /// here ind should be \.
         int was = ind + 1;
         while (input[ind] != '.') ind++;
         return new Expression(dynamic_cast<LambdaParser::Use *>(use),
@@ -233,6 +239,26 @@ void LambdaParser::Expression::SetVariable(LambdaParser::Variable *_variable) {
 
 void LambdaParser::Expression::SetExpression(LambdaParser::Expression *_expr) {
     expr = _expr;
+}
+
+bool LambdaParser::Expression::Reduct() {
+    if (IsUsage()) {
+        return usage->Reduct();
+    } else {
+        if (IsClosed()) {
+            return expr->Reduct();
+        } else {
+            if (usage->Reduct()) {
+                return true;
+            } else {
+                Atom *last = usage->GetAtoms().back();
+                if (!last->IsVariable()) {
+                    REDUCTION;
+                }
+                return expr->Reduct();
+            }
+        }
+    }
 }
 
 LambdaParser::Expression *LambdaParser::Parse(std::string &input) {
