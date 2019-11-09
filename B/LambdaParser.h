@@ -15,7 +15,7 @@ public:
     struct TreeNode {
     public:
 
-//        virtual bool Reduct() = 0;
+        virtual bool Reduct() = 0;
 
         virtual std::string ToString() const = 0;
 
@@ -27,7 +27,7 @@ public:
 
         Variable(std::string_view _name);
 
-//        bool Reduct();
+        bool Reduct();
 
         static Variable *CreateUnchecked(std::string_view input);
 
@@ -45,7 +45,7 @@ public:
 
         TreeNode *value;
 
-//        bool Reduct();
+        bool Reduct();
 
         static Atom *Create(std::string_view input);
 
@@ -63,7 +63,7 @@ public:
 
         Use();
 
-//        bool Reduct();
+        bool Reduct();
 
         static Use *Create(std::string_view input);
 
@@ -81,7 +81,7 @@ public:
 
         Expression(Use *use, Variable *var, Expression *exp);
 
-//        bool Reduct();
+        bool Reduct();
 
         static Expression *Create(std::string_view input);
 

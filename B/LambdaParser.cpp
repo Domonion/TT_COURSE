@@ -68,7 +68,7 @@ LambdaParser::Variable::Variable(std::string_view const _name) : name(_name) {}
 
 LambdaParser::Variable *LambdaParser::Variable::CreateUnchecked(std::string_view input_raw) {
     string_view input = trimSpaces(input_raw);
-    if(mapper.count(input)){
+    if (mapper.count(input)) {
         return mapper[input];
     }
     return new Variable(input);
@@ -83,9 +83,9 @@ std::string LambdaParser::Variable::ToString() const {
 
 LambdaParser::Variable::~Variable() {}
 
-//bool LambdaParser::Variable::Reduct() {
-//    return false;
-//}
+bool LambdaParser::Variable::Reduct() {
+    return false;
+}
 
 LambdaParser::Atom::Atom(LambdaParser::TreeNode *const _value) : value(_value) {}
 
@@ -115,9 +115,9 @@ LambdaParser::Atom::~Atom() {
     delete value;
 }
 
-//bool LambdaParser::Atom::Reduct() {
-//    return value->Reduct();
-//}
+bool LambdaParser::Atom::Reduct() {
+    return value->Reduct();
+}
 
 LambdaParser::Use::Use() {}
 
@@ -159,6 +159,22 @@ std::string LambdaParser::Use::ToString() const {
 
 LambdaParser::Use::~Use() {
     fora(i, atoms)delete i;
+}
+
+bool LambdaParser::Use::Reduct() {
+    forn(i, 0, size(atoms)) {
+        if(i < size(atoms) - 1){
+            if(!atoms[i]->IsVariable()){
+                REDUCTON;
+                return true;
+            }
+            //todo what if i am the only one and left of me is expr?
+            //todo is it right order of reduction:
+            if(atoms[i]->Reduct()){
+                return true;
+            }
+        }
+    }
 }
 
 LambdaParser::Expression::Expression(LambdaParser::Use *use, LambdaParser::Variable *var, LambdaParser::Expression *exp)
@@ -231,25 +247,28 @@ LambdaParser::Expression::~Expression() {
     delete expr;
 }
 
-//bool LambdaParser::Expression::Reduct() {
-//    if (IsUsage()) {
-//        return usage->Reduct();
-//    } else {
-//        if (IsClosed()) {
-//            return expr->Reduct();
-//        } else {
-//            if (usage->Reduct()) {
-//                return true;
-//            } else {
-//                Atom *last = usage->GetAtoms().back();
-//                if (!last->IsVariable()) {
-//                    REDUCTION;
-//                }
-//                return expr->Reduct();
-//            }
-//        }
-//    }
-//}
+bool LambdaParser::Expression::Reduct() {
+    if (IsUsage()) {
+        return usage->Reduct();
+    } else {
+        if (IsClosed()) {
+            return expr->Reduct();
+        } else {
+            if (usage->Reduct()) {
+                return true;
+            } else {
+                if (size(usage->atoms) == 1) {
+                    Atom *last = usage->atoms.back();
+                    if (!last->IsVariable()) {
+                        REDUCTION;
+                        return true;
+                    }
+                }
+                return expr->Reduct();
+            }
+        }
+    }
+}
 
 LambdaParser::Expression *LambdaParser::Parse(std::string &input) {
     whitespaceToSpace(input);
