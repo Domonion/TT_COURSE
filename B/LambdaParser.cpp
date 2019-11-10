@@ -163,14 +163,22 @@ LambdaParser::Use::~Use() {
 
 bool LambdaParser::Use::Reduct() {
     forn(i, 0, size(atoms)) {
-        if(i < size(atoms) - 1){
-            if(!atoms[i]->IsVariable()){
-                REDUCTON;
-                return true;
+        if (i < size(atoms) - 1) {
+            if (!atoms[i]->IsVariable()) {
+                Expression *nowAtom = dynamic_cast<Expression *>(atoms[i]->value);
+                if(nowAtom->IsClosed()) {
+                    Expression *newAtom = nowAtom->DeepCopy();
+                    *newAtom->variable = *atoms[i + 1]->value;
+                    newAtom->variable = nullptr;
+                    atoms[i]->value = newAtom;
+
+                    atoms.erase(atoms.begin() + i + 1);
+                    return true;
+                }
             }
-            //todo what if i am the only one and left of me is expr?
-            //todo is it right order of reduction:
-            if(atoms[i]->Reduct()){
+            //TODO in deep copy, can there be inner wrappers and how should i deal with them
+            //TODO answer - собираю заново все, что изменил
+            if (atoms[i]->Reduct()) {
                 return true;
             }
         }
@@ -199,6 +207,8 @@ LambdaParser::Expression *LambdaParser::Expression::Create(string_view input_raw
                                          LambdaParser::Expression::Create(input.substr(ind + 1)));
         if (old != nullptr) {
             mapper[var_s] = old;
+        } else {
+            mapper.erase(var_s);
         }
         return res;
     } else {
@@ -211,6 +221,8 @@ LambdaParser::Expression *LambdaParser::Expression::Create(string_view input_raw
         Variable *old = nullptr;
         if (mapper.count(var_s)) {
             old = mapper[var_s];
+        } else {
+            mapper.erase(var_s);
         }
         mapper[var_s] = var;
         Expression *res = new Expression(dynamic_cast<LambdaParser::Use *>(use),
@@ -260,14 +272,24 @@ bool LambdaParser::Expression::Reduct() {
                 if (size(usage->atoms) == 1) {
                     Atom *last = usage->atoms.back();
                     if (!last->IsVariable()) {
-                        REDUCTION;
-                        return true;
+                        Expression *atom = dynamic_cast<Expression *>(last->value);
+                        if(atom->IsClosed()) {
+                            Expression *newAtom = atom->DeepCopy();
+                            *newAtom->variable = *this;
+                            newAtom->variable = nullptr;
+                            usage->atoms.back()->value = newAtom;
+                            return true;
+                        }
                     }
                 }
                 return expr->Reduct();
             }
         }
     }
+}
+
+LambdaParser::Expression *LambdaParser::Expression::DeepCopy() {
+    
 }
 
 LambdaParser::Expression *LambdaParser::Parse(std::string &input) {

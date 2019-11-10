@@ -81,6 +81,8 @@ public:
 
         Expression(Use *use, Variable *var, Expression *exp);
 
+        Expression * DeepCopy();
+
         bool Reduct();
 
         static Expression *Create(std::string_view input);
