@@ -2,7 +2,7 @@
 // Created by Artemiy.Kononov on 11/5/2019.
 //
 #include "LambdaParser.h"
-#include "Proof.h"
+//#include "Proof.h"
 #include "main.h"
 #include "Substitution.h"
 
@@ -25,8 +25,9 @@ int main() {
     auto substitution = Substitution::Unificate(equations);
     if (substitution.isValid) {
         substitution.Substitute(type);
-        auto proof = Proof::Prove(res, type);
-        proof.Write();
+        cout << type->ToString();
+//        auto proof = Proof::Prove(res, type);
+//        proof.Write();
     } else {
         cout << "Expression has no type";
     }

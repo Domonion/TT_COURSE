@@ -4,6 +4,9 @@
 
 #include "Type.h"
 
+map<string, int> TypeProjector;
+
+int TypeCounter = 0;
 
 Implication::~Implication() {
     delete from;
@@ -24,25 +27,33 @@ bool Implication::Contains(Type *type) {
 }
 
 bool Implication::Change(Type *var, Type *expr) {
+    bool res = false;
     is(var, Terminal*, varTerm);
     if(!from->IsVar()) {
-        from->Change(var, expr);
+        res |= from->Change(var, expr);
     }
     else{
         is(from, Terminal*, fromTerm);
         if(fromTerm->type == varTerm->type) {
             from = expr;
+            res = true;
         }
     }
     if(!to->IsVar()) {
-        to->Change(var, expr);
+        res |= to->Change(var, expr);
     }
     else{
         is(to, Terminal*, toTerm);
         if(toTerm->type == varTerm->type) {
             to = expr;
+            res = true;
         }
     }
+    return res;
+}
+
+string Implication::ToString() {
+    return "(" + from->ToString() + " -> " + to->ToString() + ")";
 }
 
 Terminal::Terminal(std::string str) {
@@ -70,4 +81,12 @@ bool Terminal::Contains(Type *jopa) {
 
 bool Terminal::Change(Type *var, Type *expr) {
     return true;
+}
+
+string Terminal::ToString() {
+    return "t" + to_string(type);
+}
+
+Type::~Type() {
+
 }
