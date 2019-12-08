@@ -83,6 +83,10 @@ std::string LambdaParser::Variable::ToString() const {
 
 LambdaParser::Variable::~Variable() {}
 
+pr<Equation, Type *> LambdaParser::Variable::inferenceType() {
+    return pr<Equation, Type *>(Equation(), new Terminal(ToString()));
+}
+
 LambdaParser::Atom::Atom(LambdaParser::TreeNode *const _value) : value(_value) {}
 
 LambdaParser::Atom *LambdaParser::Atom::Create(string_view input_raw) {
@@ -109,6 +113,10 @@ std::string LambdaParser::Atom::ToString() const {
 
 LambdaParser::Atom::~Atom() {
     delete value;
+}
+
+pr<Equation, Type *> LambdaParser::Atom::inferenceType() {
+    return value->inferenceType();
 }
 
 LambdaParser::Use::Use() {}
@@ -151,6 +159,27 @@ std::string LambdaParser::Use::ToString() const {
 
 LambdaParser::Use::~Use() {
     fora(i, atoms)delete i;
+}
+
+pr<Equation, Type *> Combine(pr<Equation, Type *> p, pr<Equation, Type *> r) {
+    Equation equation = Equation();
+    equation.statements.insert(equation.statements.end(), all(p.first.statements));
+    equation.statements.insert(equation.statements.end(), all(r.first.statements));
+    Type *newTerm = new Terminal();
+    equation.statements.push_back(Equation::Statement(p.sc, new Implication(r.sc, newTerm)));
+    return pr<Equation, Type *>(equation, newTerm);
+}
+
+pr<Equation, Type *> LambdaParser::Use::inferenceType() {
+    if (size(atoms) == 1) {
+        return atoms.back()->inferenceType();
+    }
+    Atom *last = atoms.back();
+    atoms.pop_back();
+    auto resOther = inferenceType();
+    auto resBack = last->inferenceType();
+    atoms.push_back(last);
+    return Combine(resOther, resBack);
 }
 
 LambdaParser::Expression::Expression(LambdaParser::Use *use, LambdaParser::Variable *var, LambdaParser::Expression *exp)
@@ -225,6 +254,22 @@ LambdaParser::Expression::~Expression() {
     delete usage;
     delete variable;
     delete expr;
+}
+
+pr<Equation, Type *> LambdaParser::Expression::inferenceType() {
+    if (IsUsage()) {
+        return usage->inferenceType();
+    }
+    if (IsClosed()) {
+        auto res = expr->inferenceType();
+        return pr<Equation, Type *>(res.fs, new Implication(new Terminal(variable->ToString()), res.sc));
+    }
+    auto usage2 = usage;
+    usage = nullptr;
+    auto resExpr = inferenceType();
+    usage = usage2;
+    auto resUsage = usage->inferenceType();
+    return Combine(resUsage, resExpr);
 }
 
 LambdaParser::Expression *LambdaParser::Parse(std::string &input) {

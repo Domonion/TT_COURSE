@@ -1,13 +1,9 @@
 //
 // Created by Artemiy.Kononov on 11/5/2019.
 //
-#include <string>
-#include <exception>
-#include <string_view>
-#include <vector>
-#include "main.h"
 #include "Equation.h"
 #include "Type.h"
+#include "main.h"
 
 #ifndef A_LAMBDAPARSER_H
 #define A_LAMBDAPARSER_H
@@ -22,7 +18,7 @@ public:
 
         virtual ~TreeNode() = 0;
 
-        virtual pr<Equation, Type> GetEquation() = 0;
+        virtual pr<Equation, Type*> inferenceType() = 0;
     };
 
     struct Variable : public TreeNode {
@@ -36,7 +32,7 @@ public:
 
         std::string ToString() const;
 
-        pr<Equation, Type> GetEquation();
+        pr<Equation, Type*> inferenceType();
 
         ~Variable();
     };
@@ -54,7 +50,7 @@ public:
 
         std::string ToString() const;
 
-        pr<Equation, Type> GetEquation();
+        pr<Equation, Type*> inferenceType();
 
         ~Atom();
     };
@@ -70,7 +66,7 @@ public:
 
         std::string ToString() const;
 
-        pr<Equation, Type> GetEquation();
+        pr<Equation, Type*> inferenceType();
 
         ~Use();
     };
@@ -88,7 +84,7 @@ public:
 
         std::string ToString() const;
 
-        pr<Equation, Type> GetEquation();
+        pr<Equation, Type*> inferenceType();
 
         bool IsUsage() const;
 
