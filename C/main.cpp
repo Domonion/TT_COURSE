@@ -19,11 +19,13 @@ int main() {
         input += buffer + ' ';
     }
     auto res = LambdaParser::Parse(input);
+    //TODO may be it is shit
     auto inferredType = res->inferenceType();
     auto type = inferredType.sc;
     auto equations = inferredType.fs;
     auto substitution = Substitution::Unificate(equations);
     if (substitution.isValid) {
+        //TODO may be i should deepcopy type before going anywhere
         substitution.Substitute(type);
         cout << type->ToString();
 //        auto proof = Proof::Prove(res, type);

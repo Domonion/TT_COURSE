@@ -13,7 +13,7 @@ public:
     ///при это на каждой импликации я должен выдавать новый тип совершенно
     ///мапчик из стрингвью в инты)
     virtual bool Contains(Type * type) = 0;
-    virtual bool Change(Type * var, Type * expr) = 0;
+    virtual Type* Change(Type * var, Type * expr) = 0;
     virtual bool IsVar() = 0;
     virtual string ToString() = 0;
     virtual ~Type();
@@ -23,7 +23,7 @@ struct Implication : Type {
     Type *from, *to;
     Implication(Type * left, Type * right);
     bool Contains(Type * type);
-    bool Change(Type * var, Type * expr);
+    Type* Change(Type * var, Type * expr);
     bool IsVar();
     string ToString();
     ~Implication();
@@ -34,7 +34,7 @@ struct Terminal : Type {
     Terminal();
     Terminal(std::string);
     bool Contains(Type * type);
-    bool Change(Type * var, Type * expr);
+    Type* Change(Type * var, Type * expr);
     bool IsVar();
     string ToString();
     ~Terminal();

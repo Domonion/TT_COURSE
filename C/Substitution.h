@@ -14,7 +14,7 @@ public:
     const bool isValid;
     Substitution(bool _isValid);
     Substitution(Equation equation);
-    bool Substitute(Type * type);
+    bool Substitute(Type*& type);
     Equation myEquation;
 };
 

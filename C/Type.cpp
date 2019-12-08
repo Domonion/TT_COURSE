@@ -26,30 +26,13 @@ bool Implication::Contains(Type *type) {
     return from->Contains(type) || to->Contains(type);
 }
 
-bool Implication::Change(Type *var, Type *expr) {
-    bool res = false;
-    is(var, Terminal*, varTerm);
-    if(!from->IsVar()) {
-        res |= from->Change(var, expr);
+Type *Implication::Change(Type *var, Type *expr) {
+    auto l = from->Change(var, expr);
+    auto r = from->Change(var, expr);
+    if (from == l && to == r) {
+        return this;
     }
-    else{
-        is(from, Terminal*, fromTerm);
-        if(fromTerm->type == varTerm->type) {
-            from = expr;
-            res = true;
-        }
-    }
-    if(!to->IsVar()) {
-        res |= to->Change(var, expr);
-    }
-    else{
-        is(to, Terminal*, toTerm);
-        if(toTerm->type == varTerm->type) {
-            to = expr;
-            res = true;
-        }
-    }
-    return res;
+    return new Implication(l, r);
 }
 
 string Implication::ToString() {
@@ -59,7 +42,7 @@ string Implication::ToString() {
 Terminal::Terminal(std::string str) {
     type = TypeProjector[str];
     if (type == 0) {
-        TypeProjector[str] = ++TypeCounter;
+        type = TypeProjector[str] = ++TypeCounter;
     }
 }
 
@@ -79,8 +62,12 @@ bool Terminal::Contains(Type *jopa) {
     return term->type == type;
 }
 
-bool Terminal::Change(Type *var, Type *expr) {
-    return true;
+Type *Terminal::Change(Type *var, Type *expr) {
+    is(var, Terminal*, v);
+    if (v->type == type) {
+        return expr;
+    }
+    return this;
 }
 
 string Terminal::ToString() {

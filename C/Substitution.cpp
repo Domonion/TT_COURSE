@@ -36,14 +36,20 @@ Substitution Substitution::Unificate(Equation equation) {
         }
         //I should break every once i changed something, because otherwise it might break into infinite loop
         forn(i, 0, size(equation.statements)) {
-            if (equation.statements[i].l->IsVar() && !equation.statements[i].r->IsVar()) {
-                forn(j, 0, size(equation.statements)) {
-                    if (equation.statements[j].l->Change(equation.statements[i].l, equation.statements[i].r) |
-                        equation.statements[j].r->Change(equation.statements[i].l, equation.statements[i].r)) {
-                        done = true;
-                        break;
+            if (equation.statements[i].l->IsVar()) {
+                forn(j, 0, size(equation.statements)) if (i != j) {
+                        if (equation.statements[j].l->Contains(equation.statements[i].l)) {
+                            equation.statements[j].l = equation.statements[j].l->Change(equation.statements[i].l,  equation.statements[i].r);
+                            done = true;
+                        }
+                        if (equation.statements[j].r->Contains(equation.statements[i].l)) {
+                            equation.statements[j].r = equation.statements[j].r->Change(equation.statements[i].l,  equation.statements[i].r);
+                            done = true;
+                        }
+                        if (done) {
+                            break;
+                        }
                     }
-                }
                 if (done) {
                     break;
                 }
@@ -57,18 +63,40 @@ Substitution::Substitution(bool _isValid) : isValid(_isValid) {}
 
 Substitution::Substitution(Equation equation) : myEquation(equation), isValid(true) {}
 
-bool Substitution::Substitute(Type *type) {
+bool Substitution::Substitute(Type *&type) {
     if (type->IsVar()) {
         foraa(i, myEquation.statements) {
             if (type->Contains(i.l)) {
-                //TODO is this right
-                *type = *i.r;
+                type = i.r;
                 return true;
             }
-            return false;
         }
+
     }
     is(type, Implication*, pImpl);
-    return Substitute(pImpl->from) |
-           Substitute(pImpl->to);
+    if (pImpl == nullptr) return true;
+    bool res = false;
+    if (pImpl->from->IsVar()) {
+        foraa(i, myEquation.statements) {
+            if (pImpl->from->Contains(i.l)) {
+                pImpl->from = i.r;
+                res = true;
+                break;
+            }
+        }
+    } else {
+        res |= Substitute(pImpl->from);
+    }
+    if (pImpl->to->IsVar()) {
+        foraa(i, myEquation.statements) {
+            if (pImpl->to->Contains(i.l)) {
+                pImpl->to = i.r;
+                res = true;
+                break;
+            }
+        }
+    } else {
+        res |= Substitute(pImpl->to);
+    }
+    return res;
 }
