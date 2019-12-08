@@ -28,7 +28,7 @@ bool Implication::Contains(Type *type) {
 
 Type *Implication::Change(Type *var, Type *expr) {
     auto l = from->Change(var, expr);
-    auto r = from->Change(var, expr);
+    auto r = to->Change(var, expr);
     if (from == l && to == r) {
         return this;
     }
@@ -39,11 +39,15 @@ string Implication::ToString() {
     return "(" + from->ToString() + " -> " + to->ToString() + ")";
 }
 
+Implication *Implication::DeepCopy() {
+    return new Implication(from->DeepCopy(), to->DeepCopy());
+}
+
 Terminal::Terminal(std::string str) {
-    type = TypeProjector[str];
-    if (type == 0) {
-        type = TypeProjector[str] = ++TypeCounter;
+    if(TypeProjector[str] == 0){
+        TypeProjector[str] = ++TypeCounter;
     }
+    type = TypeProjector[str];
 }
 
 
@@ -74,6 +78,18 @@ string Terminal::ToString() {
     return "t" + to_string(type);
 }
 
+Terminal *Terminal::DeepCopy() {
+    return new Terminal(type);
+}
+
+Terminal::Terminal(int tp) : type(tp) {
+
+}
+
 Type::~Type() {
 
+}
+
+void NewLambdaType(string s) {
+    TypeProjector[s] = ++TypeCounter;
 }

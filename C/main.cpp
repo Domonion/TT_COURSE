@@ -19,9 +19,8 @@ int main() {
         input += buffer + ' ';
     }
     auto res = LambdaParser::Parse(input);
-    //TODO here is problem with naming lambda parameters, i got same type for different lambda parameters with same name
     auto inferredType = res->inferenceType();
-    auto type = inferredType.sc;
+    auto type = inferredType.sc->DeepCopy();
     auto equations = inferredType.fs;
     auto substitution = Substitution::Unificate(equations);
     if (substitution.isValid) {

@@ -97,10 +97,6 @@ LambdaParser::Atom *LambdaParser::Atom::Create(string_view input_raw) {
     return new Atom(LambdaParser::Variable::CreateUnchecked(input));
 }
 
-bool LambdaParser::Atom::IsVariable() const {
-    return dynamic_cast<Variable *>(value);
-}
-
 std::string LambdaParser::Atom::ToString() const {
     if (is(value, Expression *const, expr)) {
         return expr->ToString();
@@ -261,6 +257,7 @@ pr<Equation, Type *> LambdaParser::Expression::inferenceType() {
         return usage->inferenceType();
     }
     if (IsClosed()) {
+        NewLambdaType(variable->ToString());
         auto res = expr->inferenceType();
         return pr<Equation, Type *>(res.fs, new Implication(new Terminal(variable->ToString()), res.sc));
     }

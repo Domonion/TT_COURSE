@@ -46,8 +46,6 @@ public:
 
         static Atom *Create(std::string_view input);
 
-        bool IsVariable() const;
-
         std::string ToString() const;
 
         pr<Equation, Type*> inferenceType();

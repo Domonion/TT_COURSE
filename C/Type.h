@@ -7,6 +7,8 @@
 #ifndef C_TYPE_H
 #define C_TYPE_H
 
+void NewLambdaType(string s);
+
 struct Type {
 public:
     ///мне нужно гарантировать, что типы от терминалов будут совпадать при равенстве
@@ -17,6 +19,7 @@ public:
     virtual bool IsVar() = 0;
     virtual string ToString() = 0;
     virtual ~Type();
+    virtual Type * DeepCopy() = 0;
 };
 
 struct Implication : Type {
@@ -26,6 +29,7 @@ struct Implication : Type {
     Type* Change(Type * var, Type * expr);
     bool IsVar();
     string ToString();
+    Implication* DeepCopy();
     ~Implication();
 };
 
@@ -33,10 +37,12 @@ struct Terminal : Type {
     int type;
     Terminal();
     Terminal(std::string);
+    Terminal(int tp);
     bool Contains(Type * type);
     Type* Change(Type * var, Type * expr);
     bool IsVar();
     string ToString();
+    Terminal* DeepCopy();
     ~Terminal();
 };
 
