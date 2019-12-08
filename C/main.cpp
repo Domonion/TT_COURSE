@@ -19,7 +19,7 @@ int main() {
         input += buffer + ' ';
     }
     auto res = LambdaParser::Parse(input);
-    //TODO may be it is shit
+    //TODO here is problem with naming lambda parameters, i got same type for different lambda parameters with same name
     auto inferredType = res->inferenceType();
     auto type = inferredType.sc;
     auto equations = inferredType.fs;
