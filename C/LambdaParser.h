@@ -121,6 +121,7 @@ public:
 
 extern vector<string> answer;
 extern string openVars;
+Type *withSubstituition(LambdaParser::TreeNode *node, Substitution &substitution);
 extern map<string_view, LambdaParser::Variable *> mapper;
 
 #endif //A_LAMBDAPARSER_H

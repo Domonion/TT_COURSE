@@ -21,10 +21,18 @@ int main() {
     auto equations = inferredType.fs;
     auto substitution = Substitution::Unificate(equations);
     if (substitution.isValid) {
-        //TODO every free variable add to string
+        bool first = true;
+        foraa(i, mapper) {
+            if(!first){
+                openVars += ", " + i.sc->ToString() + " : " + withSubstituition(i.sc, substitution)->ToString();
+            } else{
+                openVars = i.sc->ToString() + " : " + withSubstituition(i.sc, substitution)->ToString();
+                first = false;
+            }
+        }
         res->Prove(substitution);
         std::reverse(all(answer));
-        foraa(i, answer){
+        foraa(i, answer) {
             cout << i << '\n';
         }
     } else {

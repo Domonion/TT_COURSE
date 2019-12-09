@@ -236,7 +236,21 @@ Type *LambdaParser::Use::GetType() {
 }
 
 void LambdaParser::Use::Prove(Substitution &substitution) {
-
+    if(size(atoms) == 1){
+        atoms.back()->Prove(substitution);
+    } else {
+        currentDepth++;
+        writePrefix(this, substitution);
+        Type* lastType = types.back();
+        types.pop_back();
+        Atom* lastAtom = atoms.back();
+        atoms.pop_back();
+        this->Prove(substitution);
+        lastAtom->Prove(substitution);
+        atoms.push_back(lastAtom);
+        types.push_back(lastType);
+        currentDepth--;
+    }
 }
 
 LambdaParser::Expression::Expression(LambdaParser::Use *use, LambdaParser::Variable *var, LambdaParser::Expression *exp)
@@ -317,21 +331,26 @@ LambdaParser::Expression::~Expression() {
 }
 
 pr<Equation, Type *> LambdaParser::Expression::inferenceType() {
-    //TODO save expression type
     if (IsUsage()) {
-        return usage->inferenceType();
+        auto res = usage->inferenceType();
+        myType = res.sc;
+        return res;
     }
     if (IsClosed()) {
         NewLambdaType(variable->ToString());
         auto res = expr->inferenceType();
-        return pr<Equation, Type *>(res.fs, new Implication(new Terminal(variable->ToString()), res.sc));
+        auto kek =  pr<Equation, Type *>(res.fs, new Implication(new Terminal(variable->ToString()), res.sc));
+        myType = kek.sc;
+        return kek;
     }
     auto usage2 = usage;
     usage = nullptr;
     auto resExpr = inferenceType();
     usage = usage2;
     auto resUsage = usage->inferenceType();
-    return Combine(resUsage, resExpr);
+    auto res =  Combine(resUsage, resExpr);
+    myType = res.sc;
+    return res;
 }
 
 Type *LambdaParser::Expression::GetType() {
@@ -350,7 +369,20 @@ void LambdaParser::Expression::Prove(Substitution &substitution) {
         hypos.pop_back();
         currentDepth--;
     } else {
-        //TODO when we like usage
+        currentDepth++;
+        writePrefix(this, substitution);
+        auto use = usage;
+        usage = nullptr;
+        this->Prove(substitution);
+        usage = use;
+        auto expression = expr;
+        auto var = variable;
+        variable = nullptr;
+        expr = nullptr;
+        this->Prove(substitution);
+        expr = expression;
+        variable = var;
+        currentDepth--;
     }
 }
 
