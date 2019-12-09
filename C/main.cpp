@@ -2,7 +2,6 @@
 // Created by Artemiy.Kononov on 11/5/2019.
 //
 #include "LambdaParser.h"
-#include "Proof.hpp"
 #include "main.h"
 #include "Substitution.h"
 
@@ -15,17 +14,19 @@ int main() {
     string input;
     string buffer;
     while (cin >> buffer) {
-        //TODO FUCKINLONG
         input += buffer + ' ';
     }
     auto res = LambdaParser::Parse(input);
     auto inferredType = res->inferenceType();
-    auto type = inferredType.sc->DeepCopy();
     auto equations = inferredType.fs;
     auto substitution = Substitution::Unificate(equations);
     if (substitution.isValid) {
-        substitution.Substitute(type);
-        Proof::Prove(res, type);
+        //TODO every free variable add to string
+        res->Prove(substitution);
+        std::reverse(all(answer));
+        foraa(i, answer){
+            cout << i << '\n';
+        }
     } else {
         cout << "Expression has no type";
     }

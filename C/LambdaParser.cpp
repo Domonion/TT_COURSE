@@ -6,7 +6,37 @@
 #include "main.h"
 
 map<string_view, LambdaParser::Variable *> mapper;
+vector<string> answer;
+vector<string> hypos;
+string openVars;
+static int currentDepth = -1;
 
+void writePrefix(LambdaParser::TreeNode *node, Substitution &substitution) {
+    forn(i, 0, currentDepth) {
+        cout << "*   ";
+    }
+    cout << openVars;
+    if (size(hypos)) {
+        cout << ", ";
+    }
+    forn(i, 0, size(hypos)) {
+        cout << hypos[i];
+        if (i != size(hypos) - 1) {
+            cout << ", ";
+        }
+    }
+    cout << " |- " << node->ToString() << " : ";
+    auto nodeType = node->GetType();
+    substitution.Substitute(nodeType);
+    cout << nodeType->ToString() << '\n';
+
+}
+
+Type *withSubstituition(LambdaParser::TreeNode *node, Substitution &substitution) {
+    auto res = node->GetType();
+    substitution.Substitute(res);
+    return res;
+}
 bool valid(char c) {
     return c != '.' && c != '\\' && c != ' ' && c != '(' && c != ')';
 }
@@ -68,10 +98,10 @@ LambdaParser::Variable::Variable(std::string_view const _name) : name(_name) {}
 
 LambdaParser::Variable *LambdaParser::Variable::CreateUnchecked(std::string_view input_raw) {
     string_view input = trimSpaces(input_raw);
-    if (mapper.count(input)) {
-        return mapper[input];
+    if (!mapper.count(input)) {
+        mapper[input] = new Variable(input);
     }
-    return new Variable(input);
+    return mapper[input];
 }
 
 std::string LambdaParser::Variable::ToString() const {
@@ -84,7 +114,20 @@ std::string LambdaParser::Variable::ToString() const {
 LambdaParser::Variable::~Variable() {}
 
 pr<Equation, Type *> LambdaParser::Variable::inferenceType() {
-    return pr<Equation, Type *>(Equation(), new Terminal(ToString()));
+    if (myType == nullptr) {
+        myType = new Terminal(ToString());
+    }
+    return pr<Equation, Type *>(Equation(), myType->DeepCopy());
+}
+
+Type *LambdaParser::Variable::GetType() {
+    return myType;
+}
+
+void LambdaParser::Variable::Prove(Substitution &substitution) {
+    currentDepth++;
+    writePrefix(this, substitution);
+    currentDepth--;
 }
 
 LambdaParser::Atom::Atom(LambdaParser::TreeNode *const _value) : value(_value) {}
@@ -113,6 +156,14 @@ LambdaParser::Atom::~Atom() {
 
 pr<Equation, Type *> LambdaParser::Atom::inferenceType() {
     return value->inferenceType();
+}
+
+Type *LambdaParser::Atom::GetType() {
+    return value->GetType();
+}
+
+void LambdaParser::Atom::Prove(Substitution &substitution) {
+    value->Prove(substitution);
 }
 
 LambdaParser::Use::Use() {}
@@ -175,7 +226,17 @@ pr<Equation, Type *> LambdaParser::Use::inferenceType() {
     auto resOther = inferenceType();
     auto resBack = last->inferenceType();
     atoms.push_back(last);
-    return Combine(resOther, resBack);
+    auto combined = Combine(resOther, resBack);
+    types.push_back(combined.sc->DeepCopy());
+    return combined;
+}
+
+Type *LambdaParser::Use::GetType() {
+    return types.back()->DeepCopy();
+}
+
+void LambdaParser::Use::Prove(Substitution &substitution) {
+
 }
 
 LambdaParser::Expression::Expression(LambdaParser::Use *use, LambdaParser::Variable *var, LambdaParser::Expression *exp)
@@ -214,26 +275,29 @@ LambdaParser::Expression *LambdaParser::Expression::Create(string_view input_raw
         Variable *old = nullptr;
         if (mapper.count(var_s)) {
             old = mapper[var_s];
-        } else {
+        } //TODO check if this is ok?
+        /* else {
             mapper.erase(var_s);
-        }
+        }*/
         mapper[var_s] = var;
         Expression *res = new Expression(dynamic_cast<LambdaParser::Use *>(use),
                                          var,
                                          LambdaParser::Expression::Create(input.substr(ind + 1)));
         if (old != nullptr) {
             mapper[var_s] = old;
+        } else {
+            mapper.erase(var_s);
         }
         return res;
     }
 }
 
 std::string LambdaParser::Expression::ToString() const {
-    //TODO that is very very long(
     if (IsUsage()) {
         return usage->ToString();
     } else {
-        return (IsClosed() ? "" : "(" + usage->ToString() + " ") + "(\\" + variable->ToString() + "." + expr->ToString() +
+        return (IsClosed() ? "" : "(" + usage->ToString() + " ") + "(\\" + variable->ToString() + "." +
+               expr->ToString() +
                ")" + (IsClosed() ? "" : ")");
     }
 }
@@ -253,6 +317,7 @@ LambdaParser::Expression::~Expression() {
 }
 
 pr<Equation, Type *> LambdaParser::Expression::inferenceType() {
+    //TODO save expression type
     if (IsUsage()) {
         return usage->inferenceType();
     }
@@ -267,6 +332,26 @@ pr<Equation, Type *> LambdaParser::Expression::inferenceType() {
     usage = usage2;
     auto resUsage = usage->inferenceType();
     return Combine(resUsage, resExpr);
+}
+
+Type *LambdaParser::Expression::GetType() {
+    return myType->DeepCopy();
+}
+
+void LambdaParser::Expression::Prove(Substitution &substitution) {
+    if (IsUsage()) {
+        usage->Prove(substitution);
+        return;
+    } else if (IsClosed()) {
+        currentDepth++;
+        writePrefix(this, substitution);
+        hypos.push_back(variable->ToString() + " : " + withSubstituition(variable, substitution)->ToString());
+        expr->Prove(substitution);
+        hypos.pop_back();
+        currentDepth--;
+    } else {
+        //TODO when we like usage
+    }
 }
 
 LambdaParser::Expression *LambdaParser::Parse(std::string &input) {

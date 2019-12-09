@@ -3,6 +3,7 @@
 //
 #include "Equation.h"
 #include "Type.h"
+#include "Substitution.h"
 #include "main.h"
 
 #ifndef A_LAMBDAPARSER_H
@@ -18,11 +19,17 @@ public:
 
         virtual ~TreeNode() = 0;
 
-        virtual pr<Equation, Type*> inferenceType() = 0;
+        virtual Type *GetType() = 0;
+
+        virtual void Prove(Substitution &substitution) = 0;
+
+        virtual pr<Equation, Type *> inferenceType() = 0;
     };
 
     struct Variable : public TreeNode {
     public:
+
+        Type *myType;
 
         Variable(std::string_view _name);
 
@@ -32,7 +39,11 @@ public:
 
         std::string ToString() const;
 
-        pr<Equation, Type*> inferenceType();
+        Type *GetType();
+
+        pr<Equation, Type *> inferenceType();
+
+        void Prove(Substitution &substitution);
 
         ~Variable();
     };
@@ -42,13 +53,17 @@ public:
 
         Atom(TreeNode *_value);
 
+        Type *GetType();
+
         TreeNode *value;
 
         static Atom *Create(std::string_view input);
 
         std::string ToString() const;
 
-        pr<Equation, Type*> inferenceType();
+        void Prove(Substitution &substitution);
+
+        pr<Equation, Type *> inferenceType();
 
         ~Atom();
     };
@@ -57,14 +72,19 @@ public:
     public:
 
         std::vector<Atom *> atoms;
+        std::vector<Type *> types;
+
+        Type *GetType();
 
         Use();
 
         static Use *Create(std::string_view input);
 
+        void Prove(Substitution &substitution);
+
         std::string ToString() const;
 
-        pr<Equation, Type*> inferenceType();
+        pr<Equation, Type *> inferenceType();
 
         ~Use();
     };
@@ -75,14 +95,19 @@ public:
         Use *usage;
         TreeNode *variable;
         Expression *expr;
+        Type* myType;
+
+        Type *GetType();
 
         Expression(Use *use, Variable *var, Expression *exp);
 
         static Expression *Create(std::string_view input);
 
+        void Prove(Substitution &substitution);
+
         std::string ToString() const;
 
-        pr<Equation, Type*> inferenceType();
+        pr<Equation, Type *> inferenceType();
 
         bool IsUsage() const;
 
@@ -94,5 +119,8 @@ public:
     static Expression *Parse(std::string &input);
 };
 
+extern vector<string> answer;
+extern string openVars;
+extern map<string_view, LambdaParser::Variable *> mapper;
 
 #endif //A_LAMBDAPARSER_H
