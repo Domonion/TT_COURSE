@@ -2,7 +2,7 @@
 // Created by Artemiy.Kononov on 11/5/2019.
 //
 #include "LambdaParser.h"
-//#include "Proof.h"
+#include "Proof.hpp"
 #include "main.h"
 #include "Substitution.h"
 
@@ -24,11 +24,8 @@ int main() {
     auto equations = inferredType.fs;
     auto substitution = Substitution::Unificate(equations);
     if (substitution.isValid) {
-        //TODO may be i should deepcopy type before going anywhere
         substitution.Substitute(type);
-        cout << type->ToString();
-//        auto proof = Proof::Prove(res, type);
-//        proof.Write();
+        Proof::Prove(res, type);
     } else {
         cout << "Expression has no type";
     }
