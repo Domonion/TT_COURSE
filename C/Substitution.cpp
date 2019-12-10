@@ -46,9 +46,6 @@ Substitution Substitution::Unificate(Equation equation) {
                             equation.statements[j].r = equation.statements[j].r->Change(equation.statements[i].l,  equation.statements[i].r);
                             done = true;
                         }
-                        if (done) {
-                            break;
-                        }
                     }
                 if (done) {
                     break;
