@@ -11,7 +11,7 @@ vector<string> hypos;
 string openVars;
 static int currentDepth = -1;
 
-void writePrefix(LambdaParser::TreeNode *node, Substitution &substitution) {
+void writePrefix(LambdaParser::TreeNode *node, Substitution &substitution, int t) {
     forn(i, 0, currentDepth) {
         cout << "*   ";
     }
@@ -29,7 +29,7 @@ void writePrefix(LambdaParser::TreeNode *node, Substitution &substitution) {
     cout << "|- " << node->ToString() << " : ";
     auto nodeType = node->GetType();
     substitution.Substitute(nodeType);
-    cout << nodeType->ToString() << '\n';
+    cout << nodeType->ToString() << " [rule #" << t << "]\n";
 
 }
 
@@ -130,7 +130,7 @@ Type *LambdaParser::Variable::GetType() {
 
 void LambdaParser::Variable::Prove(Substitution &substitution) {
     currentDepth++;
-    writePrefix(this, substitution);
+    writePrefix(this, substitution, 1);
     currentDepth--;
 }
 
@@ -244,7 +244,7 @@ void LambdaParser::Use::Prove(Substitution &substitution) {
         atoms.back()->Prove(substitution);
     } else {
         currentDepth++;
-        writePrefix(this, substitution);
+        writePrefix(this, substitution, 2);
         Type *lastType = types.back();
         types.pop_back();
         Atom *lastAtom = atoms.back();
@@ -364,14 +364,14 @@ void LambdaParser::Expression::Prove(Substitution &substitution) {
         return;
     } else if (IsClosed()) {
         currentDepth++;
-        writePrefix(this, substitution);
+        writePrefix(this, substitution, 3);
         hypos.push_back(variable->ToString() + " : " + withSubstituition(variable, substitution)->ToString());
         expr->Prove(substitution);
         hypos.pop_back();
         currentDepth--;
     } else {
         currentDepth++;
-        writePrefix(this, substitution);
+        writePrefix(this, substitution, 2);
         auto use = usage;
         usage = nullptr;
         this->Prove(substitution);
