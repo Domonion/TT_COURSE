@@ -23,9 +23,9 @@ int main() {
     if (substitution.isValid) {
         bool first = true;
         foraa(i, mapper) {
-            if(!first){
+            if (!first) {
                 openVars += ", " + i.sc->ToString() + " : " + withSubstituition(i.sc, substitution)->ToString();
-            } else{
+            } else {
                 openVars = i.sc->ToString() + " : " + withSubstituition(i.sc, substitution)->ToString();
                 first = false;
             }
