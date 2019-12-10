@@ -6,7 +6,6 @@
 #include "main.h"
 
 map<string_view, LambdaParser::Variable *> mapper;
-vector<string> answer;
 vector<string> hypos;
 string openVars;
 static int currentDepth = -1;
@@ -340,6 +339,7 @@ pr<Equation, Type *> LambdaParser::Expression::inferenceType() {
     if (IsClosed()) {
         NewLambdaType(variable->ToString());
         auto res = expr->inferenceType();
+        variable->inferenceType();
         auto kek = pr<Equation, Type *>(res.fs, new Implication(new Terminal(variable->ToString()), res.sc));
         myType = kek.sc;
         return kek;

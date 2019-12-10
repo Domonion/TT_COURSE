@@ -31,10 +31,6 @@ int main() {
             }
         }
         res->Prove(substitution);
-        std::reverse(all(answer));
-        foraa(i, answer) {
-            cout << i << '\n';
-        }
     } else {
         cout << "Expression has no type";
     }
