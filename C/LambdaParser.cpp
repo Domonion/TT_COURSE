@@ -96,7 +96,9 @@ void uniqueSpaces(string &out) {
 
 LambdaParser::TreeNode::~TreeNode() {}
 
-LambdaParser::Variable::Variable(std::string_view const _name) : name(_name) {}
+LambdaParser::Variable::Variable(std::string_view const _name) : name(_name) {
+    myType = nullptr;
+}
 
 LambdaParser::Variable *LambdaParser::Variable::CreateUnchecked(std::string_view input_raw) {
     string_view input = trimSpaces(input_raw);
@@ -256,7 +258,7 @@ void LambdaParser::Use::Prove(Substitution &substitution) {
 }
 
 LambdaParser::Expression::Expression(LambdaParser::Use *use, LambdaParser::Variable *var, LambdaParser::Expression *exp)
-        : usage(use), variable(var), expr(exp) {}
+        : usage(use), variable(var), expr(exp) {myType = nullptr;}
 
 LambdaParser::Expression *LambdaParser::Expression::Create(string_view input_raw) {
     string_view input = trimSpaces(input_raw);
