@@ -15,6 +15,7 @@ void writePrefix(LambdaParser::TreeNode *node, Substitution &substitution, int t
         cout << "*   ";
     }
     cout << openVars;
+    //TODO check if openVars contains hypos
     if (size(hypos) && size(openVars)) {
         cout << ", ";
     }
@@ -124,7 +125,7 @@ pr<Equation, Type *> LambdaParser::Variable::inferenceType() {
 }
 
 Type *LambdaParser::Variable::GetType() {
-    return myType;
+    return myType->DeepCopy();
 }
 
 void LambdaParser::Variable::Prove(Substitution &substitution) {
@@ -267,13 +268,13 @@ LambdaParser::Expression *LambdaParser::Expression::Create(string_view input_raw
     } else if (input[0] == '\\') {
         int ind = 0;
         while (input[ind] != '.') ind++;
-        string_view var_s = input.substr(1, ind - 1);
+        string_view var_s = trimSpaces(input.substr(1, ind - 1));
         Variable *old = nullptr;
         if (mapper.count(var_s)) {
             old = mapper[var_s];
+            mapper.erase(var_s);
         }
         Variable *var = LambdaParser::Variable::CreateUnchecked(var_s);
-        mapper[var_s] = var;
         Expression *res = new Expression(nullptr, var,
                                          LambdaParser::Expression::Create(input.substr(ind + 1)));
         if (old != nullptr) {
@@ -287,13 +288,13 @@ LambdaParser::Expression *LambdaParser::Expression::Create(string_view input_raw
         LambdaParser::Use *use = LambdaParser::Use::Create(input.substr(0, ind));
         int was = ind + 1;
         while (input[ind] != '.') ind++;
-        string_view var_s = input.substr(was, ind - was);
+        string_view var_s = trimSpaces(input.substr(was, ind - was));
         Variable *old = nullptr;
         if (mapper.count(var_s)) {
             old = mapper[var_s];
+            mapper.erase(var_s);
         }
         Variable *var = LambdaParser::Variable::CreateUnchecked(var_s);
-        mapper[var_s] = var;
         Expression *res = new Expression(dynamic_cast<LambdaParser::Use *>(use),
                                          var,
                                          LambdaParser::Expression::Create(input.substr(ind + 1)));
@@ -333,15 +334,14 @@ LambdaParser::Expression::~Expression() {
 pr<Equation, Type *> LambdaParser::Expression::inferenceType() {
     if (IsUsage()) {
         auto res = usage->inferenceType();
-        myType = res.sc;
+        myType = res.sc->DeepCopy();
         return res;
     }
     if (IsClosed()) {
         NewLambdaType(variable->ToString());
         auto res = expr->inferenceType();
-        variable->inferenceType();
-        auto kek = pr<Equation, Type *>(res.fs, new Implication(new Terminal(variable->ToString()), res.sc));
-        myType = kek.sc;
+        auto kek = pr<Equation, Type *>(res.fs, new Implication(variable->inferenceType().second, res.sc));
+        myType = kek.sc->DeepCopy();
         return kek;
     }
     auto usage2 = usage;
@@ -350,7 +350,7 @@ pr<Equation, Type *> LambdaParser::Expression::inferenceType() {
     usage = usage2;
     auto resUsage = usage->inferenceType();
     auto res = Combine(resUsage, resExpr);
-    myType = res.sc;
+    myType = res.sc->DeepCopy();
     return res;
 }
 
@@ -370,6 +370,7 @@ void LambdaParser::Expression::Prove(Substitution &substitution) {
         hypos.pop_back();
         currentDepth--;
     } else {
+        //TODO type from prove here
         currentDepth++;
         writePrefix(this, substitution, 2);
         auto use = usage;
