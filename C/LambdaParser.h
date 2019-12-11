@@ -96,6 +96,7 @@ public:
         TreeNode *variable;
         Expression *expr;
         Type* myType;
+        Type* withoutUsage;
 
         Type *GetType();
 

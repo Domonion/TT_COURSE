@@ -44,7 +44,7 @@ Implication *Implication::DeepCopy() {
 }
 
 Terminal::Terminal(std::string str) {
-    if(TypeProjector[str] == 0){
+    if(!TypeProjector.count(str)){
         TypeProjector[str] = ++TypeCounter;
     }
     type = TypeProjector[str];

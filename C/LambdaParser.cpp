@@ -15,7 +15,6 @@ void writePrefix(LambdaParser::TreeNode *node, Substitution &substitution, int t
         cout << "*   ";
     }
     cout << openVars;
-    //TODO check if openVars contains hypos
     if (size(hypos) && size(openVars)) {
         cout << ", ";
     }
@@ -348,6 +347,7 @@ pr<Equation, Type *> LambdaParser::Expression::inferenceType() {
     usage = nullptr;
     auto resExpr = inferenceType();
     usage = usage2;
+    withoutUsage = resExpr.second->DeepCopy();
     auto resUsage = usage->inferenceType();
     auto res = Combine(resUsage, resExpr);
     myType = res.sc->DeepCopy();
@@ -370,12 +370,13 @@ void LambdaParser::Expression::Prove(Substitution &substitution) {
         hypos.pop_back();
         currentDepth--;
     } else {
-        //TODO type from prove here
         currentDepth++;
         writePrefix(this, substitution, 2);
         auto use = usage;
         usage = nullptr;
+        swap(myType, withoutUsage);
         this->Prove(substitution);
+        swap(myType, withoutUsage);
         usage = use;
         auto expression = expr;
         auto var = variable;
