@@ -6,8 +6,8 @@
 #include "Substitution.h"
 
 int main() {
-//    freopen("input.txt", "r", stdin);
-//    freopen("output.txt", "w", stdout);
+    freopen("input.txt", "r", stdin);
+    freopen("output.txt", "w", stdout);
     iostream::sync_with_stdio(false);
     cin.tie(nullptr);
     cout.tie(nullptr);
@@ -20,7 +20,6 @@ int main() {
     auto inferredType = res->inferenceType();
     auto equations = inferredType.fs;
     auto substitution = Substitution::Unificate(equations);
-    //TODO is substitution suffocate
     if (substitution.isValid) {
         bool first = true;
         foraa(i, mapper) {

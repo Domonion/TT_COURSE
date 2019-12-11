@@ -46,7 +46,7 @@ Implication *Implication::DeepCopy() {
 Terminal::Terminal(std::string str) {
     if(!TypeProjector.count(str)){
         TypeProjector[str] = ++TypeCounter;
-    }
+    }//TODO free
     type = TypeProjector[str];
 }
 
@@ -63,15 +63,12 @@ bool Terminal::IsVar() {
 
 bool Terminal::Contains(Type *jopa) {
     is(jopa, Terminal*, term);
-    if(term != nullptr) {
         return term->type == type;
-    }
-    return false;
 }
 
 Type *Terminal::Change(Type *var, Type *expr) {
     is(var, Terminal*, v);
-    if (v != nullptr && v->type == type) {
+    if (v->type == type) {
         return expr;
     }
     return this;
