@@ -20,6 +20,7 @@ int main() {
     auto inferredType = res->inferenceType();
     auto equations = inferredType.fs;
     auto substitution = Substitution::Unificate(equations);
+    //TODO is substitution suffocate
     if (substitution.isValid) {
         bool first = true;
         foraa(i, mapper) {

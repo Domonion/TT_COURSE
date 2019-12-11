@@ -63,12 +63,15 @@ bool Terminal::IsVar() {
 
 bool Terminal::Contains(Type *jopa) {
     is(jopa, Terminal*, term);
-    return term->type == type;
+    if(term != nullptr) {
+        return term->type == type;
+    }
+    return false;
 }
 
 Type *Terminal::Change(Type *var, Type *expr) {
     is(var, Terminal*, v);
-    if (v->type == type) {
+    if (v != nullptr && v->type == type) {
         return expr;
     }
     return this;

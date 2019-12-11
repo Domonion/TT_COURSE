@@ -15,7 +15,7 @@ bool Equation::Statement::CheckSame(Type * nowl, Type* nowr) {
     }
     is(nowl, Implication*, lImpl);
     is(nowr, Implication*, rImpl);
-    return CheckSame(lImpl->from, rImpl->to) && CheckSame(lImpl->to, rImpl->to);
+    return CheckSame(lImpl->from, rImpl->from) && CheckSame(lImpl->to, rImpl->to);
 }
 
 bool Equation::Statement::Same() {
