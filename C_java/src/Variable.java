@@ -1,11 +1,11 @@
-public class Variable implements Term {
+public class Variable implements INode {
     public String name;
-    public int alpha;
-    public boolean free;
-    public Variable(String name, int alpha, boolean free){
+    public int typeInt;
+    public boolean can;
+    public Variable(String name, int typeInt, boolean can){
         this.name = name;
-        this.alpha = alpha;
-        this.free = free;
+        this.typeInt = typeInt;
+        this.can = can;
     }
 
     @Override

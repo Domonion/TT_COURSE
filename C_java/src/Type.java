@@ -1,4 +1,4 @@
-public class Type implements Tau {
+public class Type implements IType {
     public Variable v;
     public Type(Variable v){
         this.v = v;

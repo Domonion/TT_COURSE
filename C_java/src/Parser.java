@@ -3,7 +3,6 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
-import static util.Util.*;
 
 public class Parser {
     public interface Token {
@@ -65,19 +64,19 @@ public class Parser {
             move();
         }
         switch (ch) {
-            case EOF:
+            case '\n':
                 cur = new Eof();
                 break;
-            case SLASH:
+            case '\\':
                 cur = new Slash();
                 break;
-            case OPEN:
+            case '(':
                 cur = new Open();
                 break;
-            case CLOSE:
+            case ')':
                 cur = new Close();
                 break;
-            case DOT:
+            case '.':
                 cur = new Dot();
                 break;
             default:
@@ -91,7 +90,7 @@ public class Parser {
     private void move() {
         i++;
         if (i == l) {
-            ch = EOF;
+            ch = '\n';
         } else {
             ch = s.charAt(i);
         }
@@ -108,10 +107,10 @@ public class Parser {
 
     private Set<Variable> variables;
 
-    private Term atom(Map<String, Variable> m) {
+    private INode atom(Map<String, Variable> m) {
         if (cur instanceof Open) {
             next();
-            Term res = expression(m);
+            INode res = expression(m);
             next();
             return res;
         } else {
@@ -129,36 +128,36 @@ public class Parser {
         }
     }
 
-    private Term abstraction(Map<String, Variable> m) {
+    private INode abstraction(Map<String, Variable> m) {
         String name = ((Identifier) next()).name;
         Variable v = new Variable(name, 1, false);
         while (variables.contains(v)) {
-            v.alpha++;
+            v.typeInt++;
         }
         variables.add(v);
         next();
         next();
         m.put(name, v);
-        Abstraction result = new Abstraction(v, expression(m));
+        Expression result = new Expression(v, expression(m));
         m.remove(name);
         return result;
     }
 
-    private Term application(Term current, Map<String, Variable> m) {
+    private INode application(INode current, Map<String, Variable> m) {
         if (cur instanceof Close || cur instanceof Slash || cur instanceof Eof) {
             return current;
         }
-        return application(new Application(current, atom(m)), m);
+        return application(new Use(current, atom(m)), m);
     }
 
-    private Term rest(Term current, Map<String, Variable> m) {
+    private INode rest(INode current, Map<String, Variable> m) {
         if (cur instanceof Close || cur instanceof Eof) {
             return current;
         }
-        return new Application(current, abstraction(m));
+        return new Use(current, abstraction(m));
     }
 
-    private Term expression(Map<String, Variable> m) {
+    private INode expression(Map<String, Variable> m) {
         if (cur instanceof Slash) {
             return abstraction(m);
         }
@@ -169,7 +168,7 @@ public class Parser {
         return variables;
     }
 
-    public Term parse() {
+    public INode parse() {
         return expression(new HashMap<>());
     }
 }

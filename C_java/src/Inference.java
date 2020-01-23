@@ -7,9 +7,9 @@ import java.util.stream.Collectors;
 
 public class Inference {
     private Set<Variable> variables;
-    private Map<Term, Tau> types;
-    private Map<Tau, Tau> typesFromSystem;
-    private List<Pair<Tau, Tau>> system;
+    private Map<INode, IType> types;
+    private Map<IType, IType> typesFromSystem;
+    private List<Pair<IType, IType>> system;
     private int counter = 0;
 
     public Inference(Set<Variable> variables) {
@@ -25,83 +25,83 @@ public class Inference {
         return "t" + counter++;
     }
 
-    private Tau infer(Term expression) {
+    private IType infer(INode expression) {
         if (expression instanceof Variable) {
-            Tau result;
+            IType result;
             if (types.containsKey(expression)) {
                 result = types.get(expression);
             } else {
-                result = new Type(new Variable(freeName(), ((Variable) expression).alpha, ((Variable) expression).free));
+                result = new Type(new Variable(freeName(), ((Variable) expression).typeInt, ((Variable) expression).can));
             }
             types.put(expression, result);
             return result;
-        } else if (expression instanceof Abstraction) {
-            Abstraction abstraction = (Abstraction) expression;
-            Type t = new Type(new Variable(freeName(), abstraction.x.alpha, abstraction.x.free));
+        } else if (expression instanceof Expression) {
+            Expression abstraction = (Expression) expression;
+            Type t = new Type(new Variable(freeName(), abstraction.x.typeInt, abstraction.x.can));
             types.put(abstraction.x, t);
-            Impl impl = new Impl(t, infer(abstraction.e));
-            types.putIfAbsent(expression, impl);
-            return impl;
+            TypeNode typeNode = new TypeNode(t, infer(abstraction.e));
+            types.putIfAbsent(expression, typeNode);
+            return typeNode;
         } else {
-            Application application = (Application) expression;
+            Use use = (Use) expression;
             Type pi = new Type(new Variable(freeName(), 0, true));
-            Tau p = infer(application.l);
-            Tau r = infer(application.r);
-            Impl impl = new Impl(r, pi);
-            system.add(new Pair<>(p, impl));
-            types.put(application, pi);
-            types.putIfAbsent(application.l, p);
-            types.putIfAbsent(application.r, r);
+            IType p = infer(use.l);
+            IType r = infer(use.r);
+            TypeNode typeNode = new TypeNode(r, pi);
+            system.add(new Pair<>(p, typeNode));
+            types.put(use, pi);
+            types.putIfAbsent(use.l, p);
+            types.putIfAbsent(use.r, r);
             return pi;
         }
     }
 
-    private boolean contains(Tau t, Type v) {
+    private boolean contains(IType t, Type v) {
         if (t instanceof Type) {
             //TODO is it ok, may be equals?
             return t == v;
         } else {
-            return contains(((Impl) t).l, v) || contains(((Impl) t).r, v);
+            return contains(((TypeNode) t).l, v) || contains(((TypeNode) t).r, v);
         }
     }
 
     private boolean bad() {
         //TODO stream ok?
-        return system.stream().anyMatch(e -> e.getKey() instanceof Type && e.getValue() instanceof Impl && contains(e.getValue(), (Type) e.getKey()));
+        return system.stream().anyMatch(e -> e.getKey() instanceof Type && e.getValue() instanceof TypeNode && contains(e.getValue(), (Type) e.getKey()));
     }
 
-    private boolean substitute(Impl impl, Tau k, Tau v) {
+    private boolean substitute(TypeNode typeNode, IType k, IType v) {
         boolean res;
-        if (impl.l instanceof Type) {
+        if (typeNode.l instanceof Type) {
             //TODO what is ==?
-            if (impl.l == k) {
-                impl.l = v;
+            if (typeNode.l == k) {
+                typeNode.l = v;
                 res = true;
             } else {
                 res = false;
             }
         } else {
-            res = substitute((Impl) impl.l, k, v);
+            res = substitute((TypeNode) typeNode.l, k, v);
         }
         if (!res) {
-            if (impl.r instanceof Type) {
+            if (typeNode.r instanceof Type) {
                 //TODO what is ==?
-                if (impl.r == k) {
-                    impl.r = v;
+                if (typeNode.r == k) {
+                    typeNode.r = v;
                     res = true;
                 }
             } else {
-                res = substitute((Impl) impl.r, k, v);
+                res = substitute((TypeNode) typeNode.r, k, v);
             }
         }
         return res;
     }
 
-    private boolean substitute(Type k, Tau v) {
+    private boolean substitute(Type k, IType v) {
         AtomicBoolean result = new AtomicBoolean(false);
         //TODO linked list?
-        List<Pair<Tau, Tau>> toAdd = new LinkedList<>();
-        List<Pair<Tau, Tau>> toRemove = new LinkedList<>();
+        List<Pair<IType, IType>> toAdd = new LinkedList<>();
+        List<Pair<IType, IType>> toRemove = new LinkedList<>();
         //TODO foreach ok?
         system.forEach(it -> {
             //TODO what is ==?
@@ -113,8 +113,8 @@ public class Inference {
                         toAdd.add(new Pair<>(v, it.getValue()));
                         result.set(true);
                     }
-                } else if (it.getKey() instanceof Impl) {
-                    if (substitute((Impl) it.getKey(), k, v)) {
+                } else if (it.getKey() instanceof TypeNode) {
+                    if (substitute((TypeNode) it.getKey(), k, v)) {
                         result.set(true);
                     }
                 }
@@ -125,8 +125,8 @@ public class Inference {
                         toAdd.add(new Pair<>(it.getKey(), v));
                         result.set(true);
                     }
-                } else if (it.getValue() instanceof Impl) {
-                    if (substitute((Impl) it.getValue(), k, v)) {
+                } else if (it.getValue() instanceof TypeNode) {
+                    if (substitute((TypeNode) it.getValue(), k, v)) {
                         result.set(true);
                     }
                 }
@@ -137,35 +137,35 @@ public class Inference {
         return result.get();
     }
 
-    private void s(Impl impl, Tau k, Tau v) {
-        if (impl.l instanceof Type) {
+    private void s(TypeNode typeNode, IType k, IType v) {
+        if (typeNode.l instanceof Type) {
             //TODO what is ==?
-            if (impl.l == k) {
-                impl.l = v;
+            if (typeNode.l == k) {
+                typeNode.l = v;
             }
-        } else if (impl.l instanceof Impl) {
-            substitute((Impl) impl.l, k, v);
+        } else if (typeNode.l instanceof TypeNode) {
+            substitute((TypeNode) typeNode.l, k, v);
         }
-        if (impl.r instanceof Type) {
+        if (typeNode.r instanceof Type) {
             //TODO what is ==?
-            if (impl.r == k) {
-                impl.r = v;
+            if (typeNode.r == k) {
+                typeNode.r = v;
             }
-        } else if (impl.r instanceof Impl) {
-            substitute((Impl) impl.r, k, v);
+        } else if (typeNode.r instanceof TypeNode) {
+            substitute((TypeNode) typeNode.r, k, v);
         }
     }
 
     private boolean solve() {
-        List<Pair<Tau, Tau>> toAdd = new LinkedList<>();
+        List<Pair<IType, IType>> toAdd = new LinkedList<>();
         while (true) {
             int cnt = 0;
             AtomicInteger typeCnt = new AtomicInteger();
             if (bad()) return false;
             system.addAll(toAdd);
             toAdd.clear();
-            List<Pair<Tau, Tau>> entries = new ArrayList<>(system);
-            for (Pair<Tau, Tau> it : entries) {
+            List<Pair<IType, IType>> entries = new ArrayList<>(system);
+            for (Pair<IType, IType> it : entries) {
                 //TODO what is !=?
                 if (it.getKey() != it.getValue()) {
                     if (it.getKey() instanceof Type) {
@@ -175,15 +175,15 @@ public class Inference {
                             cnt++;
                             break;
                         }
-                    } else if (it.getKey() instanceof Impl) {
+                    } else if (it.getKey() instanceof TypeNode) {
                         if (it.getValue() instanceof Type) {
                             system.remove(it);
                             toAdd.add(new Pair<>(it.getValue(), it.getKey()));
-                        } else if (it.getValue() instanceof Impl) {
-                            Tau l = ((Impl) it.getKey()).l;
-                            Tau r = ((Impl) it.getKey()).r;
-                            Tau a = ((Impl) it.getValue()).l;
-                            Tau b = ((Impl) it.getValue()).r;
+                        } else if (it.getValue() instanceof TypeNode) {
+                            IType l = ((TypeNode) it.getKey()).l;
+                            IType r = ((TypeNode) it.getKey()).r;
+                            IType a = ((TypeNode) it.getValue()).l;
+                            IType b = ((TypeNode) it.getValue()).r;
                             toAdd.add(new Pair<>(l, a));
                             toAdd.add(new Pair<>(r, b));
                             system.remove(it);
@@ -200,17 +200,17 @@ public class Inference {
         }
     }
 
-    private int getRuleNumber(Term expression) {
+    private int getRuleNumber(INode expression) {
         if (expression instanceof Variable) {
             return 1;
         }
-        if (expression instanceof Application) {
+        if (expression instanceof Use) {
             return 2;
         }
         return 3;
     }
 
-    private void printAnswer(Term expression, Set<Variable> context, int depth) {
+    private void printAnswer(INode expression, Set<Variable> context, int depth) {
         int ruleNumber = getRuleNumber(expression);
         String e = expression.toString();
         String t = types.get(expression).toString();
@@ -226,23 +226,23 @@ public class Inference {
         }
         typesStr.append(context.isEmpty() ? "" : " ");
         System.out.println(typesStr + "|- " + e + " " + t + " [rule #" + ruleNumber + "]");
-        if (expression instanceof Abstraction) {
+        if (expression instanceof Expression) {
             HashSet<Variable> kek = new HashSet<>(context);
-            kek.add(((Abstraction) expression).x);
-            printAnswer(((Abstraction) expression).e, kek, depth + 1);
-        } else if (expression instanceof Application) {
-            printAnswer(((Application) expression).l, context, depth + 1);
-            printAnswer(((Application) expression).r, context, depth + 1);
+            kek.add(((Expression) expression).x);
+            printAnswer(((Expression) expression).e, kek, depth + 1);
+        } else if (expression instanceof Use) {
+            printAnswer(((Use) expression).l, context, depth + 1);
+            printAnswer(((Use) expression).r, context, depth + 1);
         }
     }
 
-    public void inference(Term expression) {
+    public void inference(INode expression) {
         infer(expression);
         boolean f = solve();
         if (f) {
             system.forEach(p -> typesFromSystem.put(p.getKey(), p.getValue()));
             types.keySet().forEach(k -> {
-                Tau t = types.get(k);
+                IType t = types.get(k);
                 if (typesFromSystem.containsKey(t)) {
                     types.put(k, typesFromSystem.get(t));
                 }
@@ -253,11 +253,11 @@ public class Inference {
                     if (value == k.getKey()) {
                         types.put(key, k.getValue());
                     }
-                } else if (value instanceof Impl) {
-                    s((Impl) value, k.getKey(), k.getValue());
+                } else if (value instanceof TypeNode) {
+                    s((TypeNode) value, k.getKey(), k.getValue());
                 }
             }));
-            printAnswer(expression, variables.stream().filter(v -> v.free).collect(Collectors.toSet()), 0);
+            printAnswer(expression, variables.stream().filter(v -> v.can).collect(Collectors.toSet()), 0);
         } else {
             System.out.println("Expression has no type");
         }
