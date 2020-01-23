@@ -1,3 +1,7 @@
 .idea
 *.zip
 cmake-*
+*.class
+*.iml
+*out
+*C_kotlin
