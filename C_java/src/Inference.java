@@ -139,6 +139,7 @@ public class Inference {
 
     private void s(Impl impl, Tau k, Tau v) {
         if (impl.l instanceof Type) {
+            //TODO what is ==?
             if (impl.l == k) {
                 impl.l = v;
             }
@@ -146,6 +147,7 @@ public class Inference {
             substitute((Impl) impl.l, k, v);
         }
         if (impl.r instanceof Type) {
+            //TODO what is ==?
             if (impl.r == k) {
                 impl.r = v;
             }
@@ -164,6 +166,7 @@ public class Inference {
             toAdd.clear();
             List<Pair<Tau, Tau>> entries = new ArrayList<>(system);
             for (Pair<Tau, Tau> it : entries) {
+                //TODO what is !=?
                 if (it.getKey() != it.getValue()) {
                     if (it.getKey() instanceof Type) {
                         typeCnt.getAndIncrement();
@@ -190,6 +193,7 @@ public class Inference {
                     system.remove(it);
                 }
             }
+            //TODO what is ==?
             if (cnt == 0 && typeCnt.get() == system.size() + toAdd.size()) {
                 return true;
             }
@@ -212,8 +216,14 @@ public class Inference {
         String t = types.get(expression).toString();
         StringBuilder typesStr = new StringBuilder();
         typesStr.append("*   ".repeat(depth));
-        //TODO zapataya
-        context.forEach(it -> typesStr.append(it).append(" : ").append(types.get(it)).append(", "));
+        int index = 0;
+        for (Variable it : context) {
+            typesStr.append(it).append(" : ").append(types.get(it));
+            if(index != context.size() - 1){
+                typesStr.append(", ");
+            }
+            index++;
+        }
         typesStr.append(context.isEmpty() ? "" : " ");
         System.out.println(typesStr + "|- " + e + " " + t + " [rule #" + ruleNumber + "]");
         if (expression instanceof Abstraction) {
@@ -239,6 +249,7 @@ public class Inference {
             });
             system.forEach(k -> types.forEach((key, value) -> {
                 if (value instanceof Type) {
+                    //TODO what is ==?
                     if (value == k.getKey()) {
                         types.put(key, k.getValue());
                     }
