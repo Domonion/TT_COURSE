@@ -5,170 +5,155 @@ import java.util.Set;
 
 
 public class Parser {
+
     public interface Token {
     }
 
-    public class Open implements Token {
+    public static class Open implements Token {
     }
 
-    public class Close implements Token {
+    public static class Close implements Token {
     }
 
-    public class Slash implements Token {
+    public static class Slash implements Token {
     }
 
-    public class Dot implements Token {
+    public static class Dot implements Token {
     }
 
-    public class Eof implements Token {
+    public static class Eof implements Token {
     }
 
-    public class Identifier implements Token {
-        public String name;
-
-        public Identifier(String name) {
-            this.name = name;
-        }
+    public static class Identifier implements Token {
     }
 
-    private String s;
-    private char ch;
-    private int i = 0;
-    private int l;
-    private Token cur;
+    private String input;
+    private char currentChar;
+    private int index = 0;
+    private int length;
+    private Token currentToken;
+    private String varName;
+    private Map<String, Variable> variableMap;
 
-    private static boolean IsEof(Token t) {
-        return t instanceof Eof;
+    private static boolean IsEof(Token token) {
+        return token instanceof Eof;
     }
 
-    public Parser(String s) {
-        this.s = s;
-        ch = s.charAt(0);
-        l = s.length();
+    public Parser(String input) {
+        this.input = input;
+        variableMap = new HashMap<>();
+        currentChar = input.charAt(0);
+        length = input.length();
         this.variables = new HashSet<>();
-        next();
+        nextToken();
     }
 
-    private Identifier identifier() {
-        StringBuilder res = new StringBuilder();
-        while (IsValid(ch)) {
-            res.append(ch);
-            move();
+    private Identifier newIdentifier() {
+        StringBuilder builder = new StringBuilder();
+        while (Character.isLetterOrDigit(currentChar) || currentChar == '\'') {
+            builder.append(currentChar);
+            nextChar();
         }
-        back();
-        return new Identifier(res.toString());
+        index--;
+        currentChar = input.charAt(index);
+        varName = builder.toString();
+        return new Identifier();
     }
 
-    private Token next() {
-        while (i < l && Character.isWhitespace(s.charAt(i))) {
-            move();
+    private Token nextToken() {
+        while (index < length && Character.isWhitespace(input.charAt(index))) {
+            nextChar();
         }
-        switch (ch) {
+        switch (currentChar) {
             case '\n':
-                cur = new Eof();
+                currentToken = new Eof();
                 break;
             case '\\':
-                cur = new Slash();
+                currentToken = new Slash();
                 break;
             case '(':
-                cur = new Open();
+                currentToken = new Open();
                 break;
             case ')':
-                cur = new Close();
+                currentToken = new Close();
                 break;
             case '.':
-                cur = new Dot();
+                currentToken = new Dot();
                 break;
             default:
-                cur = identifier();
+                currentToken = newIdentifier();
                 break;
         }
-        if (!IsEof(cur)) move();
-        return cur;
+        if (!IsEof(currentToken)) nextChar();
+        return currentToken;
     }
 
-    private void move() {
-        i++;
-        if (i == l) {
-            ch = '\n';
+    private void nextChar() {
+        index++;
+        if (index == length) {
+            currentChar = '\n';
         } else {
-            ch = s.charAt(i);
+            currentChar = input.charAt(index);
         }
     }
 
-    private void back() {
-        i--;
-        ch = s.charAt(i);
-    }
+    public Set<Variable> variables;
 
-    private boolean IsValid(char c) {
-        return Character.isLetterOrDigit(c) || c == '\'';
-    }
-
-    private Set<Variable> variables;
-
-    private INode atom(Map<String, Variable> m) {
-        if (cur instanceof Open) {
-            next();
-            INode res = expression(m);
-            next();
+    private INode atom() {
+        if (currentToken instanceof Open) {
+            nextToken();
+            INode res = expression();
+            nextToken();
             return res;
         } else {
-            String name = ((Identifier) cur).name;
-            if (m.containsKey(name)) {
-                next();
-                return m.get(name);
+            String variableName = this.varName;
+            if (variableMap.containsKey(variableName)) {
+                nextToken();
+                return variableMap.get(variableName);
             } else {
-                Variable result = new Variable(name, 0, true);
-                m.put(name, result);
-                variables.add(result);
-                next();
-                return result;
+                Variable res = new Variable(variableName, 0, true);
+                variableMap.put(variableName, res);
+                variables.add(res);
+                nextToken();
+                return res;
             }
         }
     }
 
-    private INode abstraction(Map<String, Variable> m) {
-        String name = ((Identifier) next()).name;
-        Variable v = new Variable(name, 1, false);
-        while (variables.contains(v)) {
-            v.typeInt++;
+    private INode abstraction() {
+        nextToken();
+        String variableName = this.varName;
+        Variable node = new Variable(variableName, 1, false);
+        while (variables.contains(node)) {
+            node.typeInt++;
         }
-        variables.add(v);
-        next();
-        next();
-        m.put(name, v);
-        Expression result = new Expression(v, expression(m));
-        m.remove(name);
-        return result;
+        variables.add(node);
+        nextToken();
+        nextToken();
+        variableMap.put(variableName, node);
+        Expression res = new Expression(node, expression());
+        variableMap.remove(variableName);
+        return res;
     }
 
-    private INode application(INode current, Map<String, Variable> m) {
-        if (cur instanceof Close || cur instanceof Slash || cur instanceof Eof) {
-            return current;
+    private INode application(INode node) {
+        if (currentToken instanceof Close || currentToken instanceof Slash || currentToken instanceof Eof) {
+            return node;
         }
-        return application(new Use(current, atom(m)), m);
+        return application(new Use(node, atom()));
     }
 
-    private INode rest(INode current, Map<String, Variable> m) {
-        if (cur instanceof Close || cur instanceof Eof) {
-            return current;
+    private INode rest(INode node) {
+        if (currentToken instanceof Close || currentToken instanceof Eof) {
+            return node;
         }
-        return new Use(current, abstraction(m));
+        return new Use(node, abstraction());
     }
 
-    private INode expression(Map<String, Variable> m) {
-        if (cur instanceof Slash) {
-            return abstraction(m);
+    public INode expression() {
+        if (currentToken instanceof Slash) {
+            return abstraction();
         }
-        return rest(application(atom(m), m), m);
-    }
-
-    public Set<Variable> variables() {
-        return variables;
-    }
-
-    public INode parse() {
-        return expression(new HashMap<>());
+        return rest(application(atom()));
     }
 }

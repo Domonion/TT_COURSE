@@ -6,212 +6,209 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 
 public class Inference {
-    private Set<Variable> variables;
+    private Set<Variable> vars;
     private Map<INode, IType> types;
-    private Map<IType, IType> typesFromSystem;
-    private List<Pair<IType, IType>> system;
-    private int counter = 0;
+    private Map<IType, IType> newTypes;
+    private List<Pair<IType, IType>> typesList;
+    private int typesCnt = 0;
 
-    public Inference(Set<Variable> variables) {
-        this.variables = variables;
+    public Inference(Set<Variable> vars) {
+        this.vars = vars;
         types = new HashMap<>();
-        typesFromSystem = new HashMap<>();
+        newTypes = new HashMap<>();
         //TODO maybe better array list
         //TODO also i am not sure if there is no struct-like shit
-        system = new LinkedList<>();
+        typesList = new LinkedList<>();
     }
 
-    private String freeName() {
-        return "t" + counter++;
-    }
-
-    private IType infer(INode expression) {
-        if (expression instanceof Variable) {
-            IType result;
-            if (types.containsKey(expression)) {
-                result = types.get(expression);
+    private IType DoInference(INode node) {
+        if (node instanceof Variable) {
+            IType res;
+            if (types.containsKey(node)) {
+                res = types.get(node);
             } else {
-                result = new Type(new Variable(freeName(), ((Variable) expression).typeInt, ((Variable) expression).can));
+                res = new Type(new Variable("t" + typesCnt++, ((Variable) node).typeInt, ((Variable) node).can));
             }
-            types.put(expression, result);
-            return result;
-        } else if (expression instanceof Expression) {
-            Expression abstraction = (Expression) expression;
-            Type t = new Type(new Variable(freeName(), abstraction.x.typeInt, abstraction.x.can));
-            types.put(abstraction.x, t);
-            TypeNode typeNode = new TypeNode(t, infer(abstraction.e));
-            types.putIfAbsent(expression, typeNode);
+            types.put(node, res);
+            return res;
+        } else if (node instanceof Expression) {
+            Expression now = (Expression) node;
+            Type type = new Type(new Variable("t" + typesCnt++, now.x.typeInt, now.x.can));
+            types.put(now.x, type);
+            TypeNode typeNode = new TypeNode(type, DoInference(now.e));
+            types.putIfAbsent(node, typeNode);
             return typeNode;
         } else {
-            Use use = (Use) expression;
-            Type pi = new Type(new Variable(freeName(), 0, true));
-            IType p = infer(use.l);
-            IType r = infer(use.r);
-            TypeNode typeNode = new TypeNode(r, pi);
-            system.add(new Pair<>(p, typeNode));
-            types.put(use, pi);
-            types.putIfAbsent(use.l, p);
-            types.putIfAbsent(use.r, r);
-            return pi;
+            Use use = (Use) node;
+            Type inferredType = new Type(new Variable("t" + typesCnt++, 0, true));
+            IType leftType = DoInference(use.left);
+            IType rightType = DoInference(use.right);
+            TypeNode typeNode = new TypeNode(rightType, inferredType);
+            typesList.add(new Pair<>(leftType, typeNode));
+            types.put(use, inferredType);
+            types.putIfAbsent(use.left, leftType);
+            types.putIfAbsent(use.right, rightType);
+            return inferredType;
         }
     }
 
-    private boolean contains(IType t, Type v) {
-        if (t instanceof Type) {
+    private boolean Has(IType type, Type whatToFind) {
+        if (type instanceof Type) {
             //TODO is it ok, may be equals?
-            return t == v;
+            return type == whatToFind;
         } else {
-            return contains(((TypeNode) t).l, v) || contains(((TypeNode) t).r, v);
+            return Has(((TypeNode) type).left, whatToFind) || Has(((TypeNode) type).right, whatToFind);
         }
     }
 
-    private boolean bad() {
-        //TODO stream ok?
-        return system.stream().anyMatch(e -> e.getKey() instanceof Type && e.getValue() instanceof TypeNode && contains(e.getValue(), (Type) e.getKey()));
+    private boolean Check() {
+        return typesList.stream().anyMatch(e -> e.getKey() instanceof Type && e.getValue() instanceof TypeNode && Has(e.getValue(), (Type) e.getKey()));
     }
 
-    private boolean substitute(TypeNode typeNode, IType k, IType v) {
+    private boolean Replace(TypeNode typeNode, IType toFind, IType toReplace) {
         boolean res;
-        if (typeNode.l instanceof Type) {
+        if (typeNode.left instanceof Type) {
             //TODO what is ==?
-            if (typeNode.l == k) {
-                typeNode.l = v;
+            if (typeNode.left == toFind) {
+                typeNode.left = toReplace;
                 res = true;
             } else {
                 res = false;
             }
         } else {
-            res = substitute((TypeNode) typeNode.l, k, v);
+            res = Replace((TypeNode) typeNode.left, toFind, toReplace);
         }
         if (!res) {
-            if (typeNode.r instanceof Type) {
+            if (typeNode.right instanceof Type) {
                 //TODO what is ==?
-                if (typeNode.r == k) {
-                    typeNode.r = v;
+                if (typeNode.right == toFind) {
+                    typeNode.right = toReplace;
                     res = true;
                 }
             } else {
-                res = substitute((TypeNode) typeNode.r, k, v);
+                res = Replace((TypeNode) typeNode.right, toFind, toReplace);
             }
         }
         return res;
     }
 
-    private boolean substitute(Type k, IType v) {
+    private boolean Replace(Type toFind, IType toReplace) {
+        //TODO comon atomic?
         AtomicBoolean result = new AtomicBoolean(false);
         //TODO linked list?
-        List<Pair<IType, IType>> toAdd = new LinkedList<>();
-        List<Pair<IType, IType>> toRemove = new LinkedList<>();
+        List<Pair<IType, IType>> addition = new LinkedList<>();
+        List<Pair<IType, IType>> removement = new LinkedList<>();
         //TODO foreach ok?
-        system.forEach(it -> {
+        typesList.forEach(current -> {
             //TODO what is ==?
-            if (!(it.getKey() == k && it.getValue() == v)) {
-                if (it.getKey() instanceof Type) {
+            if (!(current.getKey() == toFind && current.getValue() == toReplace)) {
+                if (current.getKey() instanceof Type) {
                     //TODO what is ==?
-                    if (it.getKey() == k) {
-                        toRemove.add(it);
-                        toAdd.add(new Pair<>(v, it.getValue()));
+                    if (current.getKey() == toFind) {
+                        removement.add(current);
+                        addition.add(new Pair<>(toReplace, current.getValue()));
                         result.set(true);
                     }
-                } else if (it.getKey() instanceof TypeNode) {
-                    if (substitute((TypeNode) it.getKey(), k, v)) {
+                } else if (current.getKey() instanceof TypeNode) {
+                    if (Replace((TypeNode) current.getKey(), toFind, toReplace)) {
                         result.set(true);
                     }
                 }
-                if (it.getValue() instanceof Type) {
+                if (current.getValue() instanceof Type) {
                     //TODO what is ==?
-                    if (it.getValue() == k) {
-                        toRemove.add(it);
-                        toAdd.add(new Pair<>(it.getKey(), v));
+                    if (current.getValue() == toFind) {
+                        removement.add(current);
+                        addition.add(new Pair<>(current.getKey(), toReplace));
                         result.set(true);
                     }
-                } else if (it.getValue() instanceof TypeNode) {
-                    if (substitute((TypeNode) it.getValue(), k, v)) {
+                } else if (current.getValue() instanceof TypeNode) {
+                    if (Replace((TypeNode) current.getValue(), toFind, toReplace)) {
                         result.set(true);
                     }
                 }
             }
         });
-        system.addAll(toAdd);
-        system.removeAll(toRemove);
+        typesList.addAll(addition);
+        typesList.removeAll(removement);
         return result.get();
     }
 
-    private void s(TypeNode typeNode, IType k, IType v) {
-        if (typeNode.l instanceof Type) {
+    private void Start(TypeNode typeNode, IType toFind, IType toReplace) {
+        if (typeNode.left instanceof Type) {
             //TODO what is ==?
-            if (typeNode.l == k) {
-                typeNode.l = v;
+            if (typeNode.left == toFind) {
+                typeNode.left = toReplace;
             }
-        } else if (typeNode.l instanceof TypeNode) {
-            substitute((TypeNode) typeNode.l, k, v);
+        } else if (typeNode.left instanceof TypeNode) {
+            Replace((TypeNode) typeNode.left, toFind, toReplace);
         }
-        if (typeNode.r instanceof Type) {
+        if (typeNode.right instanceof Type) {
             //TODO what is ==?
-            if (typeNode.r == k) {
-                typeNode.r = v;
+            if (typeNode.right == toFind) {
+                typeNode.right = toReplace;
             }
-        } else if (typeNode.r instanceof TypeNode) {
-            substitute((TypeNode) typeNode.r, k, v);
+        } else if (typeNode.right instanceof TypeNode) {
+            Replace((TypeNode) typeNode.right, toFind, toReplace);
         }
     }
 
-    private boolean solve() {
-        List<Pair<IType, IType>> toAdd = new LinkedList<>();
+    private boolean Unificate() {
+        List<Pair<IType, IType>> addition = new LinkedList<>();
         while (true) {
-            int cnt = 0;
-            AtomicInteger typeCnt = new AtomicInteger();
-            if (bad()) return false;
-            system.addAll(toAdd);
-            toAdd.clear();
-            List<Pair<IType, IType>> entries = new ArrayList<>(system);
-            for (Pair<IType, IType> it : entries) {
+            int counter = 0;
+            //TODO common atomic?
+            AtomicInteger typeCount = new AtomicInteger();
+            if (Check()) return false;
+            typesList.addAll(addition);
+            addition.clear();
+            List<Pair<IType, IType>> entries = new ArrayList<>(typesList);
+            for (Pair<IType, IType> entry : entries) {
                 //TODO what is !=?
-                if (it.getKey() != it.getValue()) {
-                    if (it.getKey() instanceof Type) {
-                        typeCnt.getAndIncrement();
-                        boolean success = substitute((Type) it.getKey(), it.getValue());
-                        if (success) {
-                            cnt++;
+                if (entry.getKey() != entry.getValue()) {
+                    if (entry.getKey() instanceof Type) {
+                        typeCount.getAndIncrement();
+                        if (Replace((Type) entry.getKey(), entry.getValue())) {
+                            counter++;
                             break;
                         }
-                    } else if (it.getKey() instanceof TypeNode) {
-                        if (it.getValue() instanceof Type) {
-                            system.remove(it);
-                            toAdd.add(new Pair<>(it.getValue(), it.getKey()));
-                        } else if (it.getValue() instanceof TypeNode) {
-                            IType l = ((TypeNode) it.getKey()).l;
-                            IType r = ((TypeNode) it.getKey()).r;
-                            IType a = ((TypeNode) it.getValue()).l;
-                            IType b = ((TypeNode) it.getValue()).r;
-                            toAdd.add(new Pair<>(l, a));
-                            toAdd.add(new Pair<>(r, b));
-                            system.remove(it);
+                    } else if (entry.getKey() instanceof TypeNode) {
+                        if (entry.getValue() instanceof Type) {
+                            typesList.remove(entry);
+                            addition.add(new Pair<>(entry.getValue(), entry.getKey()));
+                        } else if (entry.getValue() instanceof TypeNode) {
+                            IType l = ((TypeNode) entry.getKey()).left;
+                            IType r = ((TypeNode) entry.getKey()).right;
+                            IType a = ((TypeNode) entry.getValue()).left;
+                            IType b = ((TypeNode) entry.getValue()).right;
+                            addition.add(new Pair<>(l, a));
+                            addition.add(new Pair<>(r, b));
+                            typesList.remove(entry);
                         }
                     }
                 } else {
-                    system.remove(it);
+                    typesList.remove(entry);
                 }
             }
             //TODO what is ==?
-            if (cnt == 0 && typeCnt.get() == system.size() + toAdd.size()) {
+            if (counter == 0 && typeCount.get() == typesList.size() + addition.size()) {
                 return true;
             }
         }
     }
 
-    private int getRuleNumber(INode expression) {
-        if (expression instanceof Variable) {
+    //kek lol russkie
+    private int GetRuleNumber(INode нода) {
+        if (нода instanceof Variable) {
             return 1;
         }
-        if (expression instanceof Use) {
+        if (нода instanceof Use) {
             return 2;
         }
         return 3;
     }
 
-    private void printAnswer(INode expression, Set<Variable> context, int depth) {
-        int ruleNumber = getRuleNumber(expression);
+    private void PrintAnswer(INode expression, Set<Variable> context, int depth) {
+        int ruleNumber = GetRuleNumber(expression);
         String e = expression.toString();
         String t = types.get(expression).toString();
         StringBuilder typesStr = new StringBuilder();
@@ -229,35 +226,34 @@ public class Inference {
         if (expression instanceof Expression) {
             HashSet<Variable> kek = new HashSet<>(context);
             kek.add(((Expression) expression).x);
-            printAnswer(((Expression) expression).e, kek, depth + 1);
+            PrintAnswer(((Expression) expression).e, kek, depth + 1);
         } else if (expression instanceof Use) {
-            printAnswer(((Use) expression).l, context, depth + 1);
-            printAnswer(((Use) expression).r, context, depth + 1);
+            PrintAnswer(((Use) expression).left, context, depth + 1);
+            PrintAnswer(((Use) expression).right, context, depth + 1);
         }
     }
 
-    public void inference(INode expression) {
-        infer(expression);
-        boolean f = solve();
-        if (f) {
-            system.forEach(p -> typesFromSystem.put(p.getKey(), p.getValue()));
-            types.keySet().forEach(k -> {
-                IType t = types.get(k);
-                if (typesFromSystem.containsKey(t)) {
-                    types.put(k, typesFromSystem.get(t));
+    public void Infer(INode expression) {
+        DoInference(expression);
+        if (Unificate()) {
+            typesList.forEach(pair -> newTypes.put(pair.getKey(), pair.getValue()));
+            types.keySet().forEach(current -> {
+                IType type = types.get(current);
+                if (newTypes.containsKey(type)) {
+                    types.put(current, newTypes.get(type));
                 }
             });
-            system.forEach(k -> types.forEach((key, value) -> {
+            typesList.forEach(pair -> types.forEach((key, value) -> {
                 if (value instanceof Type) {
                     //TODO what is ==?
-                    if (value == k.getKey()) {
-                        types.put(key, k.getValue());
+                    if (value == pair.getKey()) {
+                        types.put(key, pair.getValue());
                     }
                 } else if (value instanceof TypeNode) {
-                    s((TypeNode) value, k.getKey(), k.getValue());
+                    Start((TypeNode) value, pair.getKey(), pair.getValue());
                 }
             }));
-            printAnswer(expression, variables.stream().filter(v -> v.can).collect(Collectors.toSet()), 0);
+            PrintAnswer(expression, vars.stream().filter(cur -> cur.can).collect(Collectors.toSet()), 0);
         } else {
             System.out.println("Expression has no type");
         }

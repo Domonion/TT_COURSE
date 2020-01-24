@@ -1,12 +1,12 @@
 public class Use implements INode {
-    public INode l, r;
-    public Use(INode l, INode r){
-        this.l = l;
-        this.r = r;
+    public INode left, right;
+    public Use(INode left, INode right){
+        this.left = left;
+        this.right = right;
     }
 
     @Override
     public String toString() {
-        return "(" + l.toString() + " " + r.toString() + ")";
+        return "(" + left.toString() + " " + right.toString() + ")";
     }
 }
