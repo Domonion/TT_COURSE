@@ -3,7 +3,6 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
-
 public class Parser {
 
     public interface Token {
@@ -44,20 +43,8 @@ public class Parser {
         variableMap = new HashMap<>();
         currentChar = input.charAt(0);
         length = input.length();
-        this.variables = new HashSet<>();
+        this.vars = new HashSet<>();
         nextToken();
-    }
-
-    private Identifier newIdentifier() {
-        StringBuilder builder = new StringBuilder();
-        while (Character.isLetterOrDigit(currentChar) || currentChar == '\'') {
-            builder.append(currentChar);
-            nextChar();
-        }
-        index--;
-        currentChar = input.charAt(index);
-        varName = builder.toString();
-        return new Identifier();
     }
 
     private void nextToken() {
@@ -65,23 +52,32 @@ public class Parser {
             nextChar();
         }
         switch (currentChar) {
+            case '(':
+                currentToken = new Open();
+                break;
             case '\n':
                 currentToken = new Eof();
+                break;
+
+            case '.':
+                currentToken = new Dot();
                 break;
             case '\\':
                 currentToken = new Slash();
                 break;
-            case '(':
-                currentToken = new Open();
-                break;
             case ')':
                 currentToken = new Close();
                 break;
-            case '.':
-                currentToken = new Dot();
-                break;
             default:
-                currentToken = newIdentifier();
+                currentToken = new Identifier();
+                StringBuilder builder = new StringBuilder();
+                while (Character.isLetterOrDigit(currentChar) || currentChar == '\'') {
+                    builder.append(currentChar);
+                    nextChar();
+                }
+                index--;
+                currentChar = input.charAt(index);
+                varName = builder.toString();
                 break;
         }
         if (!IsEof(currentToken)) nextChar();
@@ -96,7 +92,7 @@ public class Parser {
         }
     }
 
-    public Set<Variable> variables;
+    public Set<Variable> vars;
 
     private INode Atom() {
         if (currentToken instanceof Open) {
@@ -106,15 +102,15 @@ public class Parser {
             return res;
         } else {
             String variableName = this.varName;
-            if (variableMap.containsKey(variableName)) {
-                nextToken();
-                return variableMap.get(variableName);
-            } else {
+            if (!variableMap.containsKey(variableName)) {
                 Variable res = new Variable(0, variableName, true);
                 variableMap.put(variableName, res);
-                variables.add(res);
+                vars.add(res);
                 nextToken();
                 return res;
+            } else {
+                nextToken();
+                return variableMap.get(variableName);
             }
         }
     }
@@ -123,10 +119,10 @@ public class Parser {
         nextToken();
         String variableName = this.varName;
         Variable node = new Variable(1, variableName, false);
-        while (variables.contains(node)) {
+        while (vars.contains(node)) {
             node.typeInt++;
         }
-        variables.add(node);
+        vars.add(node);
         nextToken();
         nextToken();
         variableMap.put(variableName, node);
@@ -136,23 +132,23 @@ public class Parser {
     }
 
     private INode Use(INode node) {
-        if (currentToken instanceof Close || currentToken instanceof Slash || currentToken instanceof Eof) {
-            return node;
+        if (!(currentToken instanceof Close || currentToken instanceof Slash || currentToken instanceof Eof)) {
+            return Use(new Use(node, Atom()));
         }
-        return Use(new Use(node, Atom()));
+        return node;
     }
 
     private INode SubRule(INode node) {
-        if (currentToken instanceof Close || currentToken instanceof Eof) {
-            return node;
+        if(! (currentToken instanceof Close || currentToken instanceof Eof) ){
+            return new Use(node, Lambda());
         }
-        return new Use(node, Lambda());
+        return node;
     }
 
     public INode Parse() {
-        if (currentToken instanceof Slash) {
-            return Lambda();
+        if (!(currentToken instanceof Slash)) {
+            return SubRule(Use(Atom()));
         }
-        return SubRule(Use(Atom()));
+        return Lambda();
     }
 }
