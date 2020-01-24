@@ -60,7 +60,7 @@ public class Parser {
         return new Identifier();
     }
 
-    private Token nextToken() {
+    private void nextToken() {
         while (index < length && Character.isWhitespace(input.charAt(index))) {
             nextChar();
         }
@@ -85,7 +85,6 @@ public class Parser {
                 break;
         }
         if (!IsEof(currentToken)) nextChar();
-        return currentToken;
     }
 
     private void nextChar() {
@@ -99,10 +98,10 @@ public class Parser {
 
     public Set<Variable> variables;
 
-    private INode atom() {
+    private INode Atom() {
         if (currentToken instanceof Open) {
             nextToken();
-            INode res = expression();
+            INode res = Parse();
             nextToken();
             return res;
         } else {
@@ -120,7 +119,7 @@ public class Parser {
         }
     }
 
-    private INode abstraction() {
+    private INode Lambda() {
         nextToken();
         String variableName = this.varName;
         Variable node = new Variable(variableName, 1, false);
@@ -131,29 +130,29 @@ public class Parser {
         nextToken();
         nextToken();
         variableMap.put(variableName, node);
-        Expression res = new Expression(node, expression());
+        Expression res = new Expression(node, Parse());
         variableMap.remove(variableName);
         return res;
     }
 
-    private INode application(INode node) {
+    private INode Use(INode node) {
         if (currentToken instanceof Close || currentToken instanceof Slash || currentToken instanceof Eof) {
             return node;
         }
-        return application(new Use(node, atom()));
+        return Use(new Use(node, Atom()));
     }
 
-    private INode rest(INode node) {
+    private INode SubRule(INode node) {
         if (currentToken instanceof Close || currentToken instanceof Eof) {
             return node;
         }
-        return new Use(node, abstraction());
+        return new Use(node, Lambda());
     }
 
-    public INode expression() {
+    public INode Parse() {
         if (currentToken instanceof Slash) {
-            return abstraction();
+            return Lambda();
         }
-        return rest(application(atom()));
+        return SubRule(Use(Atom()));
     }
 }
