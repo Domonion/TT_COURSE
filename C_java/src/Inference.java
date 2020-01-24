@@ -216,7 +216,7 @@ public class Inference {
         int index = 0;
         for (Variable it : context) {
             typesStr.append(it).append(" : ").append(types.get(it));
-            if(index != context.size() - 1){
+            if (index != context.size() - 1) {
                 typesStr.append(", ");
             }
             index++;
@@ -235,27 +235,27 @@ public class Inference {
 
     public void Infer(INode expression) {
         DoInference(expression);
-        if (Unificate()) {
-            typesList.forEach(pair -> newTypes.put(pair.getKey(), pair.getValue()));
-            types.keySet().forEach(current -> {
-                IType type = types.get(current);
-                if (newTypes.containsKey(type)) {
-                    types.put(current, newTypes.get(type));
-                }
-            });
-            typesList.forEach(pair -> types.forEach((key, value) -> {
-                if (value instanceof Type) {
-                    //TODO what is ==?
-                    if (value == pair.getKey()) {
-                        types.put(key, pair.getValue());
-                    }
-                } else if (value instanceof TypeNode) {
-                    Start((TypeNode) value, pair.getKey(), pair.getValue());
-                }
-            }));
-            PrintAnswer(expression, vars.stream().filter(cur -> cur.can).collect(Collectors.toSet()), 0);
-        } else {
+        if (!Unificate()) {
             System.out.println("Expression has no type");
+            return;
         }
+        typesList.forEach(pair -> newTypes.put(pair.getKey(), pair.getValue()));
+        types.keySet().forEach(current -> {
+            IType type = types.get(current);
+            if (newTypes.containsKey(type)) {
+                types.put(current, newTypes.get(type));
+            }
+        });
+        typesList.forEach(pair -> types.forEach((key, value) -> {
+            if (value instanceof Type) {
+                //TODO what is ==?
+                if (value == pair.getKey()) {
+                    types.put(key, pair.getValue());
+                }
+            } else if (value instanceof TypeNode) {
+                Start((TypeNode) value, pair.getKey(), pair.getValue());
+            }
+        }));
+        PrintAnswer(expression, vars.stream().filter(cur -> cur.can).collect(Collectors.toSet()), 0);
     }
 }
