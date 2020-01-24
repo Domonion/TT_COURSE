@@ -27,20 +27,20 @@ public class Inference {
             if (types.containsKey(node)) {
                 res = types.get(node);
             } else {
-                res = new Type(new Variable("t" + typesCnt++, ((Variable) node).typeInt, ((Variable) node).can));
+                res = new Type(new Variable(((Variable) node).typeInt, "t" + typesCnt++, ((Variable) node).can));
             }
             types.put(node, res);
             return res;
         } else if (node instanceof Expression) {
             Expression now = (Expression) node;
-            Type type = new Type(new Variable("t" + typesCnt++, now.x.typeInt, now.x.can));
+            Type type = new Type(new Variable(now.x.typeInt, "t" + typesCnt++, now.x.can));
             types.put(now.x, type);
             TypeNode typeNode = new TypeNode(type, DoInference(now.e));
             types.putIfAbsent(node, typeNode);
             return typeNode;
         } else {
             Use use = (Use) node;
-            Type inferredType = new Type(new Variable("t" + typesCnt++, 0, true));
+            Type inferredType = new Type(new Variable(0, "t" + typesCnt++, true));
             IType leftType = DoInference(use.left);
             IType rightType = DoInference(use.right);
             TypeNode typeNode = new TypeNode(rightType, inferredType);

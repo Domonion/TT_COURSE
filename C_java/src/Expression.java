@@ -1,7 +1,7 @@
 public class Expression implements INode {
-    public Variable x;
     public INode e;
-    public Expression(Variable x, INode e) {
+    public Variable x;
+    public Expression(INode e, Variable x) {
         this.x = x;
         this.e = e;
     }

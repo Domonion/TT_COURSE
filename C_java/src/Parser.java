@@ -110,7 +110,7 @@ public class Parser {
                 nextToken();
                 return variableMap.get(variableName);
             } else {
-                Variable res = new Variable(variableName, 0, true);
+                Variable res = new Variable(0, variableName, true);
                 variableMap.put(variableName, res);
                 variables.add(res);
                 nextToken();
@@ -122,7 +122,7 @@ public class Parser {
     private INode Lambda() {
         nextToken();
         String variableName = this.varName;
-        Variable node = new Variable(variableName, 1, false);
+        Variable node = new Variable(1, variableName, false);
         while (variables.contains(node)) {
             node.typeInt++;
         }
@@ -130,7 +130,7 @@ public class Parser {
         nextToken();
         nextToken();
         variableMap.put(variableName, node);
-        Expression res = new Expression(node, Parse());
+        Expression res = new Expression(Parse(), node);
         variableMap.remove(variableName);
         return res;
     }
