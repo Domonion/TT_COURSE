@@ -5,7 +5,7 @@ public class Main {
         Scanner s = new Scanner(System.in);
         Parser parser = new Parser(s.nextLine());
         INode root = parser.Parse();
-        Inference inferer = new Inference(parser.vars);
+        Inferenator inferer = new Inferenator(parser.vars);
         inferer.Infer(root);
     }
 }

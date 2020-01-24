@@ -5,14 +5,14 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 
-public class Inference {
+public class Inferenator {
     private Set<Variable> vars;
     private Map<INode, IType> types;
     private Map<IType, IType> newTypes;
     private List<Pair<IType, IType>> typesList;
     private int typesCnt = 0;
 
-    public Inference(Set<Variable> vars) {
+    public Inferenator(Set<Variable> vars) {
         this.vars = vars;
         types = new HashMap<>();
         newTypes = new HashMap<>();
@@ -189,11 +189,11 @@ public class Inference {
     }
 
     //kek lol russkie
-    private int GetRuleNumber(INode нода) {
-        if (нода instanceof Variable) {
+    private int GetRuleNumber(INode node) {
+        if (node instanceof Variable) {
             return 1;
         }
-        if (нода instanceof Use) {
+        if (node instanceof Use) {
             return 2;
         }
         return 3;
