@@ -20,49 +20,44 @@ public class Inference {
     }
 
     private IType DoInference(INode node) {
-        //todo invert if
-        if (node instanceof Variable) {
-            //todo declaration
-            IType res;
-            //todo invert if
-            if (types.containsKey(node)) {
-                res = types.get(node);
-            } else {
-                res = new Type(new Variable(((Variable) node).typeInt, "t" + typesCnt++, ((Variable) node).can));
-            }
-            types.put(node, res);
-            return res;
-        } else if (node instanceof Expression) {
-            //todo declaration
+        if (node instanceof Expression) {
             Expression now = (Expression) node;
             Type type = new Type(new Variable(now.x.typeInt, "t" + typesCnt++, now.x.can));
             types.put(now.x, type);
-            TypeNode typeNode = new TypeNode(type, DoInference(now.e));
-            types.putIfAbsent(node, typeNode);
-            return typeNode;
-        } else {
-            //todo declaration
+            TypeNode infferedType = new TypeNode(type, DoInference(now.e));
+            types.putIfAbsent(node, infferedType);
+            return infferedType;
+        } else if (node instanceof Use) {
             Use use = (Use) node;
             Type inferredType = new Type(new Variable(0, "t" + typesCnt++, true));
             IType leftType = DoInference(use.left);
             IType rightType = DoInference(use.right);
             TypeNode typeNode = new TypeNode(rightType, inferredType);
-            //
             typesList.add(new Pair<>(leftType, typeNode));
             types.put(use, inferredType);
             types.putIfAbsent(use.left, leftType);
             types.putIfAbsent(use.right, rightType);
             return inferredType;
+        }  else {
+            IType res;
+            if (!types.containsKey(node)) {
+                res = new Type(new Variable(((Variable) node).typeInt, "t" + typesCnt++, ((Variable) node).can));
+            } else {
+                res = types.get(node);
+            }
+            types.put(node, res);
+            return res;
         }
     }
 
     private boolean Has(IType type, Type whatToFind) {
-        //todo invert if
-        if (type instanceof Type) {
-            return type == whatToFind;
+        if (!(type instanceof Type)) {
+            if(!Has(((TypeNode) type).left, whatToFind)){
+                return Has(((TypeNode) type).right, whatToFind);
+            }
+            return true;
         } else {
-            //todo remove ||
-            return Has(((TypeNode) type).left, whatToFind) || Has(((TypeNode) type).right, whatToFind);
+            return type == whatToFind;
         }
     }
 
