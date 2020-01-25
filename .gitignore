@@ -5,3 +5,4 @@ cmake-*
 *.iml
 *out
 *C_kotlin
+*B_kotlin

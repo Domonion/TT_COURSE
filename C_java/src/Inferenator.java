@@ -205,7 +205,7 @@ public class Inferenator {
         String e = expression.toString();
         String t = types.get(expression).toString();
         StringBuilder typesStr = new StringBuilder();
-        typesStr.append("*   ".repeat(depth));
+        typesStr.append(new String(new char[depth]).replace("\0", "*   "));
         for (Variable it : context) {
             typesStr.append(it).append(" : ").append(types.get(it));
             if (index != context.size() - 1) {
@@ -214,7 +214,7 @@ public class Inferenator {
             index++;
         }
         typesStr.append(context.isEmpty() ? "" : " ");
-        System.out.println(typesStr + "|- " + e + " " + t + " [rule #" + ruleNumber + "]");
+        System.out.println(typesStr + "|- " + e + " : " + t + " [rule #" + ruleNumber + "]");
         if (expression instanceof Use) {
             PrintAnswer(((Use) expression).left, context, depth + 1);
             PrintAnswer(((Use) expression).right, context, depth + 1);
