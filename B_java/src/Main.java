@@ -2,12 +2,10 @@ import java.util.HashMap;
 import java.util.Scanner;
 
 public class Main {
-    private static INode term;
-    private static int counter = 0;
 
     private static Use findLeftMostRedux(INode t) {
         if (t instanceof Expression) {
-            return findLeftMostRedux(((Expression) t).e);
+            return findLeftMostRedux(((Expression) t).myNode);
         } else if (t instanceof Variable) {
             return null;
         } else {
@@ -24,35 +22,31 @@ public class Main {
         }
     }
 
-    private static void betaReduction(int m, int k) {
-        System.out.println(term);
-        while (counter < m) {
-            Use redux = findLeftMostRedux(term);
-            if(redux == null){
-                return;
-            }
-            Expression a = (Expression) redux.left;
-            INode l = a.e.copy();
-            l.rename(new HashMap<>());
-            INode reduced = l.substitute(a.x, redux.right);
-            term = term.reduce(redux, reduced);
-            counter++;
-            if(counter % k == 0){
-                System.out.println(term);
-            }
-        }
-
-    }
-
     public static void main(String[] args) {
         Scanner s = new Scanner(System.in);
         int m = s.nextInt();
         int k = s.nextInt();
+        int counter = 0;
         s.nextLine();
         Parser parser = new Parser(s.nextLine());
-        term = parser.Parse();
-        betaReduction(m, k);
-        if(counter % k != 0){
+        INode term = parser.Parse();
+        System.out.println(term);
+        while (counter < m) {
+            Use redux = findLeftMostRedux(term);
+            if (redux == null) {
+                break;
+            }
+            Expression a = (Expression) redux.left;
+
+            INode l = a.myNode.copy();
+            l.rename(new HashMap<>());
+            INode reduced = l.substitute(a.x, redux.right);
+            term = term.reduce(redux, reduced);
+            if (++counter % k == 0) {
+                System.out.println(term);
+            }
+        }
+        if (counter % k != 0) {
             System.out.println(term);
         }
     }

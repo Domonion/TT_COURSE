@@ -13,8 +13,8 @@ public class Variable implements INode {
     }
 
     @Override
-    public INode substitute(Variable x, INode e) {
-        return this.name.equals(x.name) ? e : this;
+    public INode substitute(Variable x, INode node) {
+        return this.name.equals(x.name) ? node : this;
     }
 
     @Override
@@ -30,7 +30,7 @@ public class Variable implements INode {
     }
 
     @Override
-    public INode reduce(Use expected, INode e) {
+    public INode reduce(Use expected, INode node) {
         return this;
     }
 }

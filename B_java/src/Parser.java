@@ -130,7 +130,7 @@ public class Parser {
     }
 
     private INode SubRule(INode node) {
-        if(! (currentToken instanceof Close || currentToken instanceof Eof) ){
+        if(!(currentToken instanceof Close || currentToken instanceof Eof) ){
             return new Use(node, Lambda());
         }
         return node;

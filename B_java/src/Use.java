@@ -10,13 +10,13 @@ public class Use implements INode {
 
     @Override
     public String toString() {
-        return "(" + left.toString() + " " + right.toString() + ")";
+        return "(" + left + " " + right + ")";
     }
 
     @Override
-    public INode substitute(Variable x, INode e) {
-        this.left = this.left.substitute(x, e);
-        this.right = this.right.substitute(x, e);
+    public INode substitute(Variable x, INode node) {
+        this.left = this.left.substitute(x, node);
+        this.right = this.right.substitute(x, node);
         return this;
     }
 
@@ -32,12 +32,12 @@ public class Use implements INode {
     }
 
     @Override
-    public INode reduce(Use expected, INode e) {
+    public INode reduce(Use expected, INode node) {
         if (expected == this) {
-            return e;
+            return node;
         } else{
-            left = left.reduce(expected, e);
-            right = right.reduce(expected, e);
+            left = left.reduce(expected, node);
+            right = right.reduce(expected, node);
             return this;
         }
     }
