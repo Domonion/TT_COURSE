@@ -1,3 +1,5 @@
+import javafx.util.Pair;
+
 import java.util.Map;
 
 public class Variable implements INode {
@@ -24,7 +26,7 @@ public class Variable implements INode {
     }
 
     @Override
-    public INode reduce(Use expected) {
-        return this;
+    public Pair<INode, Boolean> reduce() {
+        return new Pair<>(this, false);
     }
 }

@@ -1,3 +1,5 @@
+import javafx.util.Pair;
+
 import java.util.HashMap;
 import java.util.Map;
 
@@ -20,13 +22,19 @@ public class Use implements INode {
     }
 
     @Override
-    public INode reduce(Use expected) {
-        if (expected == this) {
-            return ((Expression)expected.left).myNode.SyRoC(((Expression)expected.left).x, expected.right, new HashMap<>(), false);
-        } else{
-            left = left.reduce(expected);
-            right = right.reduce(expected);
-            return this;
+    public Pair<INode, Boolean> reduce() {
+        if (left instanceof Expression) {
+            INode syrocNode = ((Expression) left).myNode.SyRoC(((Expression) left).x, right, new HashMap<>(), false);
+            return new Pair<>(syrocNode, true);
+        } else {
+            Pair<INode, Boolean> leftReduce = left.reduce();
+            left = leftReduce.getKey();
+            if (leftReduce.getValue()) {
+                return new Pair<>(this, true);
+            }
+            Pair<INode, Boolean> rightReduce = right.reduce();
+            right = rightReduce.getKey();
+            return new Pair<>(this, rightReduce.getValue());
         }
     }
 }
