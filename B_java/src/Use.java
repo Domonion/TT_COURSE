@@ -1,3 +1,4 @@
+import java.util.HashMap;
 import java.util.Map;
 
 public class Use implements INode {
@@ -19,12 +20,12 @@ public class Use implements INode {
     }
 
     @Override
-    public INode reduce(Use expected, INode node) {
+    public INode reduce(Use expected) {
         if (expected == this) {
-            return node;
+            return ((Expression)expected.left).myNode.SyRoC(((Expression)expected.left).x, expected.right, new HashMap<>(), false);
         } else{
-            left = left.reduce(expected, node);
-            right = right.reduce(expected, node);
+            left = left.reduce(expected);
+            right = right.reduce(expected);
             return this;
         }
     }

@@ -2,7 +2,7 @@ import java.util.Map;
 
 public class Expression implements INode {
     public INode myNode;
-    private static int counter = 0;
+    private static int counter = 1;
     public Variable x;
 
     public Expression(INode myNode, Variable x) {
@@ -17,7 +17,9 @@ public class Expression implements INode {
 
     @Override
     public INode SyRoC(Variable variable, INode substitution, Map<String, String> renameMap, boolean config) {
-        String name = "t" + counter++;
+        String name = "var" + counter;
+        counter*= 13;
+        counter %= 1000000007;
         INode res;
         if (renameMap.containsKey(x.name)) {
             String old = renameMap.get(x.name);
@@ -34,8 +36,8 @@ public class Expression implements INode {
     }
 
     @Override
-    public INode reduce(Use expected, INode node) {
-        myNode = myNode.reduce(expected, node);
+    public INode reduce(Use expected) {
+        myNode = myNode.reduce(expected);
         return this;
     }
 }

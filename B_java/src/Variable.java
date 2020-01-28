@@ -24,7 +24,7 @@ public class Variable implements INode {
     }
 
     @Override
-    public INode reduce(Use expected, INode node) {
+    public INode reduce(Use expected) {
         return this;
     }
 }

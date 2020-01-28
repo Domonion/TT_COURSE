@@ -1,4 +1,3 @@
-import java.util.HashMap;
 import java.util.Scanner;
 
 public class Main {
@@ -36,9 +35,7 @@ public class Main {
             if (redux == null) {
                 break;
             }
-            Expression a = (Expression) redux.left;
-            INode reduced = a.myNode.SyRoC(a.x, redux.right, new HashMap<>(), false);
-            term = term.reduce(redux, reduced);
+            term = term.reduce(redux);
             if (++counter % k == 0) {
                 System.out.println(term);
             }
