@@ -17,22 +17,22 @@ public class Use implements INode {
     }
 
     @Override
-    public INode SyRoC(Variable variable, INode substitution, Map<String, String> renameMap, boolean config) {
-        return new Use(left.SyRoC(variable, substitution, renameMap, config), right.SyRoC(variable, substitution, renameMap, config));
+    public INode SyRoC(Variable variable, INode replace, Map<String, String> renameMap, boolean config) {
+        return new Use(left.SyRoC(variable, replace, renameMap, config), right.SyRoC(variable, replace, renameMap, config));
     }
 
     @Override
-    public Pair<INode, Boolean> reduce() {
+    public Pair<INode, Boolean> PerformReduction() {
         if (left instanceof Expression) {
-            INode syrocNode = ((Expression) left).myNode.SyRoC(((Expression) left).x, right, new HashMap<>(), false);
-            return new Pair<>(syrocNode, true);
+            INode syRoC = ((Expression) left).myNode.SyRoC(((Expression) left).variable, right, new HashMap<>(), false);
+            return new Pair<>(syRoC, true);
         } else {
-            Pair<INode, Boolean> leftReduce = left.reduce();
+            Pair<INode, Boolean> leftReduce = left.PerformReduction();
             left = leftReduce.getKey();
             if (leftReduce.getValue()) {
                 return new Pair<>(this, true);
             }
-            Pair<INode, Boolean> rightReduce = right.reduce();
+            Pair<INode, Boolean> rightReduce = right.PerformReduction();
             right = rightReduce.getKey();
             return new Pair<>(this, rightReduce.getValue());
         }
