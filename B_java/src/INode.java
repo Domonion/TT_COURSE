@@ -1,8 +1,7 @@
 import java.util.Map;
 
 public interface INode {
-    INode substitute(Variable x, INode node);
-    void rename(Map<String, String> m);
-    INode copy();
+    INode SyRoC(Variable variable, INode substitution, Map<String,String> renameMap, boolean config);
+
     INode reduce(Use expected, INode node);
 }

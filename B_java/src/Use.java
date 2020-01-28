@@ -14,21 +14,8 @@ public class Use implements INode {
     }
 
     @Override
-    public INode substitute(Variable x, INode node) {
-        this.left = this.left.substitute(x, node);
-        this.right = this.right.substitute(x, node);
-        return this;
-    }
-
-    @Override
-    public void rename(Map<String, String> m) {
-        left.rename(m);
-        right.rename(m);
-    }
-
-    @Override
-    public INode copy() {
-        return new Use(this.left.copy(), this.right.copy());
+    public INode SyRoC(Variable variable, INode substitution, Map<String, String> renameMap, boolean config) {
+        return new Use(left.SyRoC(variable, substitution, renameMap, config), right.SyRoC(variable, substitution, renameMap, config));
     }
 
     @Override

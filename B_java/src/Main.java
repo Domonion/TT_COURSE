@@ -37,10 +37,7 @@ public class Main {
                 break;
             }
             Expression a = (Expression) redux.left;
-
-            INode l = a.myNode.copy();
-            l.rename(new HashMap<>());
-            INode reduced = l.substitute(a.x, redux.right);
+            INode reduced = a.myNode.SyRoC(a.x, redux.right, new HashMap<>(), false);
             term = term.reduce(redux, reduced);
             if (++counter % k == 0) {
                 System.out.println(term);

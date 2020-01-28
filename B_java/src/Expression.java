@@ -16,30 +16,21 @@ public class Expression implements INode {
     }
 
     @Override
-    public INode substitute(Variable x, INode node) {
-        myNode = myNode.substitute(x, node);
-        return this;
-    }
-
-    @Override
-    public void rename(Map<String, String> m) {
+    public INode SyRoC(Variable variable, INode substitution, Map<String, String> renameMap, boolean config) {
         String name = "t" + counter++;
-        if (m.containsKey(x.name)) {
-            String old = m.get(x.name);
-            m.put(x.name, name);
-            myNode.rename(m);
-            m.put(x.name, old);
+        INode res;
+        if (renameMap.containsKey(x.name)) {
+            String old = renameMap.get(x.name);
+            renameMap.put(x.name, name);
+            res = myNode.SyRoC(variable, substitution, renameMap, config);
+            renameMap.put(x.name, old);
         } else {
-            m.put(x.name, name);
-            myNode.rename(m);
-            m.remove(x.name);
+            renameMap.put(x.name, name);
+            res = myNode.SyRoC(variable, substitution, renameMap, config);
+            renameMap.remove(x.name);
         }
-        x.name = name;
-    }
-
-    @Override
-    public INode copy() {
-        return new Expression(myNode.copy(), (Variable) x.copy());
+        Variable newVar = new Variable(name);
+        return new Expression(res, newVar);
     }
 
     @Override

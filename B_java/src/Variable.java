@@ -13,20 +13,14 @@ public class Variable implements INode {
     }
 
     @Override
-    public INode substitute(Variable x, INode node) {
-        return this.name.equals(x.name) ? node : this;
-    }
-
-    @Override
-    public void rename(Map<String, String> m) {
-        if (m.containsKey(name) && m.get(name) != null) {
-            name = m.get(name);
+    public INode SyRoC(Variable variable, INode substitution, Map<String, String> renameMap, boolean config) {
+        String curName;
+        if (renameMap.containsKey(name) && renameMap.get(name) != null) {
+            curName = renameMap.get(name);
+        } else {
+            curName = name;
         }
-    }
-
-    @Override
-    public INode copy() {
-        return new Variable(name);
+        return curName.equals(variable.name) ? substitution : new Variable(curName);
     }
 
     @Override
