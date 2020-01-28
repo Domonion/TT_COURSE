@@ -18,19 +18,19 @@ public class Expression implements INode {
     }
 
     @Override
-    public INode SyRoC(Variable variable, INode replace, Map<String, String> renameMap, boolean config) {
+    public INode SyRoC(Variable variable, INode replace, Map<String, String> renameMap) {
         String newName = "var" + renameIndex;
-        renameIndex *= 3;
+        renameIndex *= 2;
         renameIndex %= 1000000007;
         INode res;
         if (!renameMap.containsKey(this.variable.name)) {
             renameMap.put(this.variable.name, newName);
-            res = myNode.SyRoC(variable, replace, renameMap, config);
+            res = myNode.SyRoC(variable, replace, renameMap);
             renameMap.remove(this.variable.name);
         } else {
             String oldName = renameMap.get(this.variable.name);
             renameMap.put(this.variable.name, newName);
-            res = myNode.SyRoC(variable, replace, renameMap, config);
+            res = myNode.SyRoC(variable, replace, renameMap);
             renameMap.put(this.variable.name, oldName);
         }
         Variable newVar = new Variable(newName);
@@ -38,9 +38,10 @@ public class Expression implements INode {
     }
 
     @Override
-    public Pair<INode, Boolean> PerformReduction() {
-        Pair<INode, Boolean> res = myNode.PerformReduction();
+    public Pair<INode, Boolean> PerformReduction(boolean config) {
+        Pair<INode, Boolean> res = myNode.PerformReduction(config);
         myNode = res.getKey();
-        return new Pair<>(this, res.getValue());
+        config |= res.getValue();
+        return new Pair<>(this, config);
     }
 }

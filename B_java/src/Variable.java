@@ -1,5 +1,6 @@
 import javafx.util.Pair;
 
+import java.util.HashMap;
 import java.util.Map;
 
 public class Variable implements INode {
@@ -15,9 +16,9 @@ public class Variable implements INode {
     }
 
     @Override
-    public INode SyRoC(Variable variable, INode replace, Map<String, String> renameMap, boolean config) {
+    public INode SyRoC(Variable variable, INode replace, Map<String, String> renameMap) {
         String curName;
-        if (renameMap.containsKey(name) && renameMap.get(name) != null) {
+        if (renameMap.get(name) != null) {
             curName = renameMap.get(name);
         } else {
             curName = name;
@@ -26,7 +27,7 @@ public class Variable implements INode {
     }
 
     @Override
-    public Pair<INode, Boolean> PerformReduction() {
-        return new Pair<>(this, false);
+    public Pair<INode, Boolean> PerformReduction(boolean config) {
+        return new Pair<>(this, config);
     }
 }

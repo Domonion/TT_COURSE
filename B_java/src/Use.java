@@ -5,6 +5,8 @@ import java.util.Map;
 
 public class Use implements INode {
     public INode left, right;
+    public static INode currentRedux;
+    public static INode currentSyroc;
 
     public Use(INode left, INode right) {
         this.left = left;
@@ -17,24 +19,27 @@ public class Use implements INode {
     }
 
     @Override
-    public INode SyRoC(Variable variable, INode replace, Map<String, String> renameMap, boolean config) {
-        return new Use(left.SyRoC(variable, replace, renameMap, config), right.SyRoC(variable, replace, renameMap, config));
+    public INode SyRoC(Variable variable, INode replace, Map<String, String> renameMap) {
+        return new Use(left.SyRoC(variable, replace, renameMap), right.SyRoC(variable, replace, renameMap));
     }
 
     @Override
-    public Pair<INode, Boolean> PerformReduction() {
-        if (left instanceof Expression) {
-            INode syRoC = ((Expression) left).myNode.SyRoC(((Expression) left).variable, right, new HashMap<>(), false);
-            return new Pair<>(syRoC, true);
+    public Pair<INode, Boolean> PerformReduction(boolean config) {
+        //TODO - bug: i found redux, reduced it, but changed only in my parent, others stop
+        if (!config && left instanceof Expression) {
+            currentSyroc = ((Expression) left).myNode.SyRoC(((Expression) left).variable, right, new HashMap<>());
+            currentRedux = this;
+            return new Pair<>(currentSyroc, true);
+        } else if (config && this == currentRedux) {
+            return new Pair<>(currentSyroc, true);
         } else {
-            Pair<INode, Boolean> leftReduce = left.PerformReduction();
+            Pair<INode, Boolean> leftReduce = left.PerformReduction(config);
             left = leftReduce.getKey();
-            if (leftReduce.getValue()) {
-                return new Pair<>(this, true);
-            }
-            Pair<INode, Boolean> rightReduce = right.PerformReduction();
+            config |= leftReduce.getValue();
+            Pair<INode, Boolean> rightReduce = right.PerformReduction(config);
             right = rightReduce.getKey();
-            return new Pair<>(this, rightReduce.getValue());
+            config |= rightReduce.getValue();
+            return new Pair<>(this, config);
         }
     }
 }

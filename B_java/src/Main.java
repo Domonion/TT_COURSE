@@ -13,7 +13,7 @@ public class Main {
         INode root = parser.Parse();
         System.out.println(root);
         while (iteration < m) {
-            Pair<INode, Boolean> res = root.PerformReduction();
+            Pair<INode, Boolean> res = root.PerformReduction(false);
             if (!res.getValue()) break;
             root = res.getKey();
             if (++iteration % k == 0) {
